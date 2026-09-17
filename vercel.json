@@ -1,7 +1,6 @@
 {
   "buildCommand": "",
   "outputDirectory": "./",
-  "public": true,
   "headers": [
     {
       "source": "/(.*)",
