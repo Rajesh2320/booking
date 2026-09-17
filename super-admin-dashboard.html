@@ -595,30 +595,47 @@
 
         async function loadProperties() {
             try {
-                // For now, display mock properties
-                const properties = [
-                    { id: 1, name: 'Mackey Garden', city: 'Delhi', rooms: 20, occupied: 13 },
-                    { id: 2, name: 'River Resort', city: 'Goa', rooms: 30, occupied: 24 }
-                ];
+                // Fetch real property data from Edge Function
+                const response = await fetch(
+                    `${SUPABASE_URL}/functions/v1/get-dashboard-data`,
+                    {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    }
+                );
 
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to fetch properties');
+                }
+
+                const properties = result.data.properties;
+
+                // Display properties in grid
                 const grid = document.getElementById('propertiesGrid');
                 grid.innerHTML = properties.map(prop => `
                     <div class="property-card">
                         <h4>${prop.name}</h4>
-                        <div class="property-info">📍 ${prop.city}</div>
                         <div class="property-info">🛏️ ${prop.rooms} rooms</div>
                         <div class="occupancy-bar">
-                            <div class="occupancy-fill" style="width: ${(prop.occupied / prop.rooms) * 100}%"></div>
+                            <div class="occupancy-fill" style="width: ${prop.occupancyPercentage}%"></div>
                         </div>
-                        <div class="occupancy-text">${prop.occupied}/${prop.rooms} occupied (${Math.round((prop.occupied / prop.rooms) * 100)}%)</div>
+                        <div class="occupancy-text">${prop.occupied}/${prop.rooms} occupied (${prop.occupancyPercentage}%)</div>
                     </div>
                 `).join('');
 
-                // Load property options for form
+                // Load property options for manager creation form
                 const select = document.getElementById('managerProperties');
                 select.innerHTML = properties.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                // Store for stats update
+                window.dashboardStats = result.data.stats;
+                updateStats();
             } catch (error) {
                 console.error('Error loading properties:', error);
+                const grid = document.getElementById('propertiesGrid');
+                grid.innerHTML = '<p style="text-align: center; color: #999;">Failed to load properties</p>';
             }
         }
 
@@ -647,12 +664,22 @@
             }
         }
 
+        function updateStats() {
+            // Update stats from fetched data
+            if (window.dashboardStats) {
+                document.getElementById('totalProperties').textContent = window.dashboardStats.totalProperties;
+                document.getElementById('totalRooms').textContent = window.dashboardStats.totalRooms;
+                document.getElementById('occupiedRooms').textContent = window.dashboardStats.totalOccupied;
+                document.getElementById('totalManagers').textContent = window.dashboardStats.totalManagers;
+            }
+        }
+
         function loadStats() {
-            // Mock stats
-            document.getElementById('totalProperties').textContent = '2';
-            document.getElementById('totalRooms').textContent = '50';
-            document.getElementById('occupiedRooms').textContent = '37';
-            document.getElementById('totalManagers').textContent = '0';
+            // Stats will be updated when properties are loaded
+            document.getElementById('totalProperties').textContent = 'Loading...';
+            document.getElementById('totalRooms').textContent = 'Loading...';
+            document.getElementById('occupiedRooms').textContent = 'Loading...';
+            document.getElementById('totalManagers').textContent = 'Loading...';
         }
 
         async function createManager() {
