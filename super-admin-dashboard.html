@@ -398,7 +398,7 @@
             background: white;
             border-radius: 12px;
             padding: 30px;
-            max-width: 600px;
+            max-width: 700px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
@@ -459,47 +459,70 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        /* Calendar Styles */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+        /* Action Button Styles */
+        .action-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
-            background: white;
+            margin-right: 2px;
             transition: all 0.2s;
         }
 
-        .calendar-day.available {
-            background: #e8f5e9;
-            border-color: #4caf50;
-            cursor: pointer;
-        }
-
-        .calendar-day.available:hover {
-            background: #c8e6c9;
-        }
-
-        .calendar-day.selected {
-            background: #667eea;
+        .action-btn.checkin {
+            background: #28a745;
             color: white;
-            border-color: #667eea;
         }
 
-        .calendar-day.disabled {
-            background: #f5f5f5;
-            color: #ccc;
-            cursor: not-allowed;
+        .action-btn.checkout {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .action-btn.cancel {
+            background: #dc3545;
+            color: white;
+        }
+
+        .action-btn.bill {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Bill Preview */
+        .bill-preview {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #eee;
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .bill-row.total {
+            font-weight: 600;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            font-size: 16px;
+        }
+
+        .bill-label {
+            font-weight: 500;
+        }
+
+        .bill-value {
+            text-align: right;
         }
 
         @media (max-width: 768px) {
@@ -647,7 +670,6 @@
                 <div class="booking-actions">
                     <button class="booking-btn" onclick="debugOpenBooking('create')">➕ Create Booking</button>
                     <button class="booking-btn" onclick="debugOpenBooking('modify')">✏️ Modify Booking</button>
-                    <button class="booking-btn" onclick="openModal('cancelBookingModal')">❌ Cancel Booking</button>
                     <button class="booking-btn" onclick="openModal('queryBookingModal')">🔍 Query Bookings</button>
                 </div>
 
@@ -716,46 +738,8 @@
                 </div>
             </div>
         </div>
-        <!-- MODALS FOR BOOKING OPERATIONS -->
 
-        <!-- Cancel Booking Modal -->
-        <div id="cancelBookingModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span>❌ Cancel Booking</span>
-                    <button class="modal-close" onclick="closeModal('cancelBookingModal')">✕</button>
-                </div>
-                <div class="form-section">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="cancelBookingId">Booking ID</label>
-                            <input type="text" id="cancelBookingId" placeholder="e.g., MG-001">
-                        </div>
-                        <div class="form-group">
-                            <label for="cancelPhone">Phone Number</label>
-                            <input type="tel" id="cancelPhone" placeholder="10-digit number" maxlength="10">
-                        </div>
-                        <div class="form-group form-full">
-                            <button onclick="fetchBookingForCancel()" style="width: auto;">Find Booking</button>
-                        </div>
-                    </div>
-                    <div id="cancelDetails" style="display: none; margin-top: 20px; padding: 15px; background: #fff3e0; border-radius: 8px;">
-                        <h4 style="color: #ff6f00; margin-bottom: 15px;">⚠️ Booking Details</h4>
-                        <div id="cancelDetailsList"></div>
-                        <div class="form-grid" style="margin-top: 20px;">
-                            <div class="form-group form-full">
-                                <label for="cancelReason">Cancellation Reason (Optional)</label>
-                                <textarea id="cancelReason" placeholder="Why is this booking being cancelled?" style="resize: vertical; min-height: 80px;"></textarea>
-                            </div>
-                            <div class="form-group form-full">
-                                <button onclick="submitCancelBooking()" style="width: auto; background: #dc3545;">Confirm Cancellation</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="loading" id="cancelBookingLoading"></div>
-                </div>
-            </div>
-        </div>
+        <!-- MODALS FOR BOOKING OPERATIONS -->
 
         <!-- Query Bookings Modal -->
         <div id="queryBookingModal" class="modal">
@@ -767,20 +751,22 @@
                 <div class="form-section">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="queryProperty">Property (Optional)</label>
-                            <select id="queryProperty">
-                                <option value="">All properties</option>
-                                <option value="1">Mackey Garden</option>
-                                <option value="2">Blossom Hotel</option>
+                            <label for="querySearchType">Search By</label>
+                            <select id="querySearchType">
+                                <option value="">Select search type...</option>
+                                <option value="booking_id">Booking ID</option>
+                                <option value="guest_name">Guest Name</option>
+                                <option value="phone">Phone Number</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="queryStatus">Status (Optional)</label>
-                            <select id="queryStatus">
-                                <option value="">All statuses</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="cancelled">Cancelled</option>
-                                <option value="completed">Completed</option>
+                            <label for="querySearchInput">Search Term</label>
+                            <input type="text" id="querySearchInput" placeholder="Enter search term">
+                        </div>
+                        <div class="form-group">
+                            <label for="queryProperty">Property (Optional)</label>
+                            <select id="queryProperty">
+                                <option value="">All properties</option>
                             </select>
                         </div>
                         <div class="form-group form-full">
@@ -788,25 +774,122 @@
                         </div>
                     </div>
                     <div id="queryResults" style="display: none; margin-top: 20px;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                            <thead>
-                                <tr style="background: #f5f5f5;">
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Booking ID</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Guest Name</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Phone</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Property</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Room Type</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-in</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-out</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Total Price</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Status</th>
-                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Created</th>
-                                </tr>
-                            </thead>
-                            <tbody id="queryResultsList"></tbody>
-                        </table>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: #f5f5f5;">
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Booking ID</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Guest</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Phone</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Property</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-in</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-out</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Total</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Status</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="queryResultsList"></tbody>
+                            </table>
+                        </div>
                     </div>
                     <div class="loading" id="queryBookingLoading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Check-in Modal -->
+        <div id="checkinModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>✓ Check-in Booking</span>
+                    <button class="modal-close" onclick="closeModal('checkinModal')">✕</button>
+                </div>
+                <div class="form-section">
+                    <div id="checkinDetails" style="padding: 15px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #2e7d32; margin-bottom: 10px;">📋 Booking Details</h4>
+                        <div id="checkinDetailsList"></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group form-full">
+                            <button onclick="submitCheckIn()" style="width: auto; background: #28a745;">Confirm Check-in</button>
+                            <button onclick="closeModal('checkinModal')" style="width: auto; background: #6c757d; margin-left: 10px;">Cancel</button>
+                        </div>
+                    </div>
+                    <div class="loading" id="checkinLoading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Check-out Modal -->
+        <div id="checkoutModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>⚡ Check-out Booking</span>
+                    <button class="modal-close" onclick="closeModal('checkoutModal')">✕</button>
+                </div>
+                <div class="form-section">
+                    <div id="checkoutDetails" style="padding: 15px; background: #fff3e0; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #ff6f00; margin-bottom: 10px;">📋 Booking Details</h4>
+                        <div id="checkoutDetailsList"></div>
+                    </div>
+                    <div id="billPreview" style="display: none;">
+                        <h4 style="color: #667eea; margin-bottom: 15px;">💰 Bill Summary</h4>
+                        <div class="bill-preview" id="billPreviewContent"></div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group form-full">
+                            <button onclick="submitCheckOut()" style="width: auto; background: #ffc107; color: #333;">Confirm Check-out</button>
+                            <button onclick="closeModal('checkoutModal')" style="width: auto; background: #6c757d; margin-left: 10px;">Cancel</button>
+                        </div>
+                    </div>
+                    <div class="loading" id="checkoutLoading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cancel Booking Modal -->
+        <div id="cancelBookingModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>❌ Cancel Booking</span>
+                    <button class="modal-close" onclick="closeModal('cancelBookingModal')">✕</button>
+                </div>
+                <div class="form-section">
+                    <div id="cancelDetails" style="display: none; padding: 15px; background: #fff3e0; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #ff6f00; margin-bottom: 15px;">⚠️ Booking Details</h4>
+                        <div id="cancelDetailsList"></div>
+                    </div>
+                    <div id="cancelForm" style="display: none;">
+                        <div class="form-grid">
+                            <div class="form-group form-full">
+                                <label for="cancelReason">Cancellation Reason (Optional)</label>
+                                <textarea id="cancelReason" placeholder="Why is this booking being cancelled?" style="resize: vertical; min-height: 80px;"></textarea>
+                            </div>
+                            <div class="form-group form-full">
+                                <button onclick="submitCancelBooking()" style="width: auto; background: #dc3545;">Confirm Cancellation</button>
+                                <button onclick="closeModal('cancelBookingModal')" style="width: auto; background: #6c757d; margin-left: 10px;">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="loading" id="cancelBookingLoading"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Bill Modal -->
+        <div id="viewBillModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span>📄 Bill Details</span>
+                    <button class="modal-close" onclick="closeModal('viewBillModal')">✕</button>
+                </div>
+                <div class="form-section">
+                    <div id="billContent"></div>
+                    <div style="margin-top: 20px;">
+                        <button onclick="printBill()" style="width: auto; background: #6f42c1;">🖨️ Print Bill</button>
+                        <button onclick="closeModal('viewBillModal')" style="width: auto; background: #6c757d; margin-left: 10px;">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -816,13 +899,17 @@
         const SUPABASE_PROJECT_ID = 'wabecmyyusiwmvctoiwu';
         const SUPABASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co`;
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmVjbXl5dXNpd212Y3RvaXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NjA0OTEsImV4cCI6MjEwNTAzNjQ5MX0.xIkv_WBffIVilW-ADc8Tn3iwzpSbbQsZFrrXRqwkiSE';
+        const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
 
-        // Initialize Supabase client
         let supabaseClient = null;
-
-        // Get stored user info
         let currentUser = null;
         let authToken = null;
+        let allProperties = [];
+        let currentQueryBooking = null;
+        let currentCheckinBooking = null;
+        let currentCheckoutBooking = null;
+        let currentCancelBooking = null;
+        let currentBillData = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             authToken = localStorage.getItem('authToken');
@@ -835,19 +922,13 @@
 
             currentUser = JSON.parse(userStr);
             document.getElementById('userName').textContent = currentUser.full_name;
-
-            // Set welcome message and role
             document.getElementById('welcomeMessage').textContent = `Welcome back, ${currentUser.full_name}! 👋`;
             const roleDisplay = currentUser.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User';
             document.getElementById('userRole').textContent = roleDisplay;
 
-            // Initialize Supabase client
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Apply role-based access control
             applyRoleBasedAccess();
-
-            // Load dashboard data
             loadProperties();
             loadManagers();
             loadActivity();
@@ -857,9 +938,8 @@
         function applyRoleBasedAccess() {
             const isSuperAdmin = currentUser.role === 'super_admin' || currentUser.role === 'Super Admin';
 
-            // Hide managers and settings tabs for non-super-admins
             const managerTab = document.querySelector('.tab:nth-child(1)');
-            const settingsTab = document.querySelector('.tab:nth-child(3)');
+            const settingsTab = document.querySelector('.tab:nth-child(4)');
             const managersContent = document.getElementById('managers');
             const settingsContent = document.getElementById('settings');
 
@@ -872,25 +952,20 @@
         }
 
         function switchTab(tabName) {
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 
-            // Show selected tab
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
         }
 
         async function loadProperties() {
             try {
-                // Fetch real property data from Edge Function with cache-busting
                 const response = await fetch(
                     `${SUPABASE_URL}/functions/v1/get-dashboard-data?t=${Date.now()}`,
                     {
                         method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
+                        headers: { 'Content-Type': 'application/json' }
                     }
                 );
 
@@ -903,23 +978,20 @@
                 let properties = result.data.properties;
                 const isSuperAdmin = currentUser.role && currentUser.role.toLowerCase() === 'super_admin';
 
-                // Filter properties for hotel managers - only show assigned properties
                 if (!isSuperAdmin && currentUser.role === 'hotel_manager') {
-                    // Fetch user's assigned properties
-                    const { data: assignedProps, error: assignError } = await supabaseClient
+                    const { data: assignedProps } = await supabaseClient
                         .from('user_properties')
                         .select('property_id')
                         .eq('user_id', currentUser.id);
 
-                    if (assignError) {
-                        console.error('Error fetching assigned properties:', assignError);
-                    } else if (assignedProps && assignedProps.length > 0) {
+                    if (assignedProps && assignedProps.length > 0) {
                         const assignedIds = assignedProps.map(p => p.property_id);
                         properties = properties.filter(p => assignedIds.includes(p.id));
                     }
                 }
 
-                // Display properties in grid
+                allProperties = properties;
+
                 const grid = document.getElementById('propertiesGrid');
                 grid.innerHTML = properties.map(prop => `
                     <div class="property-card">
@@ -932,15 +1004,19 @@
                     </div>
                 `).join('');
 
-                // Load property options for manager creation form (only show all for super admin)
                 const select = document.getElementById('managerProperties');
                 if (select) {
                     select.innerHTML = result.data.properties.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 }
 
-                // Store for stats update
+                // Populate property dropdown in query modal
+                const queryPropertySelect = document.getElementById('queryProperty');
+                if (queryPropertySelect) {
+                    queryPropertySelect.innerHTML = '<option value="">All properties</option>' +
+                        properties.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                }
+
                 window.dashboardStats = result.data.stats;
-                // Update stats with filtered properties for hotel managers
                 updateStats(properties);
             } catch (error) {
                 console.error('Error loading properties:', error);
@@ -952,11 +1028,8 @@
         async function loadManagers() {
             try {
                 const table = document.getElementById('managersTable').querySelector('tbody');
-
-                // Hotel manager role_id (hardcoded to avoid lookup issues)
                 const hotelManagerRoleId = '39b94386-3a1e-4996-8972-c60f9b7643bc';
 
-                // Fetch all managers with this role_id
                 const { data: managers, error } = await supabaseClient
                     .from('user_profiles')
                     .select('id, full_name, email, created_at, is_active')
@@ -968,28 +1041,17 @@
                     return;
                 }
 
-                // Display managers with action buttons
                 table.innerHTML = managers.map(manager => {
                     const isActive = manager.is_active !== false;
                     return `
                     <tr>
                         <td>${manager.full_name || 'N/A'}</td>
                         <td>${manager.email}</td>
-                        <td>
-                            <span style="font-size: 12px; background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">
-                                Assigned
-                            </span>
-                        </td>
-                        <td>
-                            <span style="font-size: 12px; color: ${isActive ? '#28a745' : '#dc3545'}; font-weight: 500;">
-                                ${isActive ? '✓ Active' : '✗ Inactive'}
-                            </span>
-                        </td>
+                        <td><span style="font-size: 12px; background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">Assigned</span></td>
+                        <td><span style="font-size: 12px; color: ${isActive ? '#28a745' : '#dc3545'}; font-weight: 500;">${isActive ? '✓ Active' : '✗ Inactive'}</span></td>
                         <td style="font-size: 12px;">
                             <button onclick="editManager('${manager.id}', '${manager.full_name}', '${manager.email}')" style="background: #667eea; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-right: 4px;">Edit</button>
-                            <button onclick="deactivateManager('${manager.id}', '${manager.full_name}', ${isActive})" style="background: ${isActive ? '#dc3545' : '#28a745'}; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
-                                ${isActive ? 'Deactivate' : 'Activate'}
-                            </button>
+                            <button onclick="deactivateManager('${manager.id}', '${manager.full_name}', ${isActive})" style="background: ${isActive ? '#dc3545' : '#28a745'}; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">${isActive ? 'Deactivate' : 'Activate'}</button>
                         </td>
                     </tr>
                     `;
@@ -1018,9 +1080,7 @@
         }
 
         function updateStats(properties = null) {
-            // Update stats from fetched data
             if (properties) {
-                // Calculate stats from filtered properties
                 const totalProps = properties.length;
                 const totalRms = properties.reduce((sum, p) => sum + (p.rooms || 0), 0);
                 const totalOcc = properties.reduce((sum, p) => sum + (p.occupied || 0), 0);
@@ -1030,7 +1090,6 @@
                 document.getElementById('occupiedRooms').textContent = totalOcc;
                 document.getElementById('totalManagers').textContent = window.dashboardStats?.totalManagers || 0;
             } else if (window.dashboardStats) {
-                // Use all data stats (for super admins)
                 document.getElementById('totalProperties').textContent = window.dashboardStats.totalProperties;
                 document.getElementById('totalRooms').textContent = window.dashboardStats.totalRooms;
                 document.getElementById('occupiedRooms').textContent = window.dashboardStats.totalOccupied;
@@ -1039,7 +1098,6 @@
         }
 
         function loadStats() {
-            // Stats will be updated when properties are loaded
             document.getElementById('totalProperties').textContent = 'Loading...';
             document.getElementById('totalRooms').textContent = 'Loading...';
             document.getElementById('occupiedRooms').textContent = 'Loading...';
@@ -1059,11 +1117,10 @@
 
             if (!email || !password || !name || properties.length === 0) {
                 messageEl.className = 'message error';
-                messageEl.textContent = '✗ Please fill in all required fields (email, password, name, and at least one property)';
+                messageEl.textContent = '✗ Please fill in all required fields';
                 return;
             }
 
-            // Validate password strength
             if (password.length < 8) {
                 messageEl.className = 'message error';
                 messageEl.textContent = '✗ Password must be at least 8 characters';
@@ -1072,41 +1129,33 @@
 
             loadingEl.classList.add('active');
             loadingEl.textContent = 'Creating manager...';
-            messageEl.className = 'message';
-            messageEl.textContent = '';
 
             try {
-                const response = await fetch(
-                    `${SUPABASE_URL}/functions/v1/create-user`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            token: authToken,
-                            email: email,
-                            password: password,
-                            full_name: name,
-                            phone: phone || null,
-                            role: 'hotel_manager',
-                            properties: properties
-                        })
-                    }
-                );
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: authToken,
+                        email: email,
+                        password: password,
+                        full_name: name,
+                        phone: phone || null,
+                        role: 'hotel_manager',
+                        properties: properties
+                    })
+                });
 
                 const data = await response.json();
 
                 if (data.success) {
                     messageEl.className = 'message success';
-                    messageEl.textContent = `✓ Manager "${name}" created successfully! They can now log in with their email.`;
+                    messageEl.textContent = `✓ Manager "${name}" created successfully!`;
 
-                    // Clear form
                     document.getElementById('managerEmail').value = '';
                     document.getElementById('managerPassword').value = '';
                     document.getElementById('managerName').value = '';
                     document.getElementById('managerPhone').value = '';
-                    document.getElementById('managerProperties').value = '';
 
-                    // Reload managers list
                     setTimeout(() => {
                         loadManagers();
                         loadStats();
@@ -1118,7 +1167,6 @@
             } catch (error) {
                 messageEl.className = 'message error';
                 messageEl.textContent = `✗ Error: ${error.message}`;
-                console.error('Create manager error:', error);
             } finally {
                 loadingEl.classList.remove('active');
             }
@@ -1134,15 +1182,11 @@
                     .update({ full_name: newName })
                     .eq('id', managerId);
 
-                if (error) {
-                    throw new Error(error.message);
-                }
-
+                if (error) throw new Error(error.message);
                 alert('✓ Manager updated successfully');
                 loadManagers();
             } catch (error) {
-                alert(`✗ Error updating manager: ${error.message}`);
-                console.error('Edit manager error:', error);
+                alert(`✗ Error: ${error.message}`);
             }
         }
 
@@ -1156,33 +1200,19 @@
                     .update({ is_active: !isActive })
                     .eq('id', managerId);
 
-                if (error) {
-                    throw new Error(error.message);
-                }
-
+                if (error) throw new Error(error.message);
                 alert(`✓ Manager ${action}d successfully`);
                 loadManagers();
             } catch (error) {
-                alert(`✗ Error ${action}ing manager: ${error.message}`);
-                console.error(`${action} manager error:`, error);
+                alert(`✗ Error: ${error.message}`);
             }
         }
 
-        // BOOKING OPERATIONS FUNCTIONS
-
         function debugOpenBooking(mode) {
-            console.log('🔍 DEBUG: Button clicked! Mode =', mode);
-            console.log('🔍 DEBUG: Current URL =', window.location.href);
-            console.log('🔍 DEBUG: Attempting to open hotel_booking_visual.html');
-
             if (mode === 'create') {
-                console.log('🔍 DEBUG: Opening:', 'hotel_booking_visual.html');
-                const result = window.open('hotel_booking_visual.html', '_blank');
-                console.log('🔍 DEBUG: window.open() returned:', result);
+                window.open('hotel_booking_visual.html', '_blank');
             } else if (mode === 'modify') {
-                console.log('🔍 DEBUG: Opening:', 'hotel_booking_visual.html?mode=modify');
-                const result = window.open('hotel_booking_visual.html?mode=modify', '_blank');
-                console.log('🔍 DEBUG: window.open() returned:', result);
+                window.open('hotel_booking_visual.html?mode=modify', '_blank');
             }
         }
 
@@ -1192,14 +1222,30 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
+            resetModalStates();
         }
 
-        // Close modal when clicking outside
+        function resetModalStates() {
+            currentQueryBooking = null;
+            currentCheckinBooking = null;
+            currentCheckoutBooking = null;
+            currentCancelBooking = null;
+            currentBillData = null;
+            document.getElementById('queryResults').style.display = 'none';
+            document.getElementById('cancelForm').style.display = 'none';
+            document.getElementById('cancelDetails').style.display = 'none';
+            document.getElementById('billPreview').style.display = 'none';
+        }
+
         document.addEventListener('click', function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('active');
+                resetModalStates();
             }
         });
+
+        const propertyNames = allProperties.length > 0 ?
+            allProperties.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {}) : {};
 
         const roomNames = {
             'standard_non_ac': 'Standard (Non-AC)',
@@ -1207,61 +1253,315 @@
             'super_deluxe': 'Super Deluxe'
         };
 
-        const propertyNames = {
-            '1': 'Mackey Garden',
-            '2': 'Blossom Hotel'
-        };
+        async function queryBookings() {
+            const searchType = document.getElementById('querySearchType').value;
+            const searchInput = document.getElementById('querySearchInput').value;
+            const propertyId = document.getElementById('queryProperty').value;
 
-        let currentCancelBooking = null;
-
-        async function fetchBookingForCancel() {
-            const bookingId = document.getElementById('cancelBookingId').value;
-            const phone = document.getElementById('cancelPhone').value;
-
-            if (!bookingId || !phone) {
-                alert('Please enter booking ID and phone number');
+            if (!searchType || !searchInput) {
+                alert('Please select a search type and enter a search term');
                 return;
             }
 
-            const loadingEl = document.getElementById('cancelBookingLoading');
+            const loadingEl = document.getElementById('queryBookingLoading');
             loadingEl.classList.add('active');
-            loadingEl.textContent = 'Finding booking...';
+            loadingEl.textContent = 'Searching bookings...';
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('bookings')
-                    .select('*')
-                    .eq('id', bookingId)
-                    .eq('guest_phone', phone)
-                    .single();
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_bookings',
+                        args: {
+                            user_id: currentUser.id,
+                            property_id: propertyId ? BigInt(propertyId) : null,
+                            search_term: searchInput,
+                            search_type: searchType
+                        }
+                    })
+                });
 
-                if (error || !data) {
-                    throw new Error('Booking not found');
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to fetch bookings');
                 }
 
-                currentCancelBooking = data;
-                const details = document.getElementById('cancelDetailsList');
-                details.innerHTML = `
-                    <p><strong>Guest:</strong> ${data.guest_name}</p>
-                    <p><strong>Property:</strong> ${propertyNames[data.property_id] || 'N/A'}</p>
-                    <p><strong>Check-in:</strong> ${data.check_in}</p>
-                    <p><strong>Check-out:</strong> ${data.check_out}</p>
-                    <p><strong>Total Price:</strong> ₹${data.total_price}</p>
-                    <p style="color: #ff6f00;"><strong>Status:</strong> ${data.status}</p>
-                `;
+                const bookings = result.bookings || [];
+                const resultsList = document.getElementById('queryResultsList');
 
-                document.getElementById('cancelDetails').style.display = 'block';
+                if (bookings.length === 0) {
+                    resultsList.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #999; padding: 20px;">No bookings found</td></tr>';
+                } else {
+                    resultsList.innerHTML = bookings.map(b => {
+                        const checkInDate = b.check_in ? new Date(b.check_in).toLocaleDateString('en-IN') : 'N/A';
+                        const checkOutDate = b.check_out ? new Date(b.check_out).toLocaleDateString('en-IN') : 'N/A';
+                        const propName = allProperties.find(p => p.id == b.property_id)?.name || 'N/A';
+
+                        const statusColor = b.status === 'confirmed' ? '#d4edda' :
+                                          b.status === 'cancelled' ? '#f8d7da' :
+                                          b.status === 'completed' ? '#cce5ff' : '#fff3cd';
+                        const statusTextColor = b.status === 'confirmed' ? '#155724' :
+                                               b.status === 'cancelled' ? '#721c24' :
+                                               b.status === 'completed' ? '#004085' : '#856404';
+
+                        let actionButtons = '';
+                        if (b.status === 'confirmed') {
+                            if (!b.checked_in) {
+                                actionButtons += `<button class="action-btn checkin" onclick="prepareCheckIn(${b.id})">Check-in</button>`;
+                            }
+                            if (b.checked_in && !b.checked_out) {
+                                actionButtons += `<button class="action-btn checkout" onclick="prepareCheckOut(${b.id})">Check-out</button>`;
+                            }
+                            actionButtons += `<button class="action-btn cancel" onclick="prepareCancel(${b.id})">Cancel</button>`;
+                        }
+                        if (b.checked_out) {
+                            actionButtons += `<button class="action-btn bill" onclick="viewBill(${b.id})">View Bill</button>`;
+                        }
+
+                        return `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 10px; font-weight: 600; color: #667eea;">${b.id}</td>
+                            <td style="padding: 10px;">${b.guest_name || 'N/A'}</td>
+                            <td style="padding: 10px;">${b.guest_phone || 'N/A'}</td>
+                            <td style="padding: 10px;">${propName}</td>
+                            <td style="padding: 10px;">${checkInDate}</td>
+                            <td style="padding: 10px;">${checkOutDate}</td>
+                            <td style="padding: 10px; font-weight: 600; color: #667eea;">₹${Number(b.total_price || 0).toLocaleString('en-IN')}</td>
+                            <td style="padding: 10px;">
+                                <span style="padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: ${statusColor}; color: ${statusTextColor};">
+                                    ${b.status.toUpperCase()}
+                                </span>
+                            </td>
+                            <td style="padding: 10px; white-space: nowrap; font-size: 11px;">
+                                ${actionButtons}
+                            </td>
+                        </tr>
+                        `;
+                    }).join('');
+                }
+
+                document.getElementById('queryResults').style.display = 'block';
             } catch (error) {
-                alert('✗ ' + error.message);
-                console.error('Fetch booking error:', error);
+                alert('✗ Error: ' + error.message);
+                console.error('Query bookings error:', error);
             } finally {
                 loadingEl.classList.remove('active');
             }
         }
 
+        async function prepareCheckIn(bookingId) {
+            try {
+                const { data: booking } = await supabaseClient
+                    .from('bookings')
+                    .select('*')
+                    .eq('id', bookingId)
+                    .single();
+
+                if (!booking) throw new Error('Booking not found');
+
+                currentCheckinBooking = booking;
+                const propName = allProperties.find(p => p.id == booking.property_id)?.name || 'N/A';
+
+                document.getElementById('checkinDetailsList').innerHTML = `
+                    <p><strong>Booking ID:</strong> ${booking.id}</p>
+                    <p><strong>Guest:</strong> ${booking.guest_name}</p>
+                    <p><strong>Property:</strong> ${propName}</p>
+                    <p><strong>Room Type:</strong> ${roomNames[booking.room_type] || booking.room_type}</p>
+                    <p><strong>Check-in Date:</strong> ${booking.check_in}</p>
+                    <p><strong>Check-out Date:</strong> ${booking.check_out}</p>
+                `;
+
+                openModal('checkinModal');
+            } catch (error) {
+                alert('✗ Error: ' + error.message);
+            }
+        }
+
+        async function submitCheckIn() {
+            if (!currentCheckinBooking) {
+                alert('No booking selected');
+                return;
+            }
+
+            const loadingEl = document.getElementById('checkinLoading');
+            loadingEl.classList.add('active');
+            loadingEl.textContent = 'Processing check-in...';
+
+            try {
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check_in_booking',
+                        args: {
+                            booking_id: BigInt(currentCheckinBooking.id),
+                            user_id: currentUser.id
+                        }
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Check-in failed');
+                }
+
+                alert('✓ Check-in successful!');
+                closeModal('checkinModal');
+                document.getElementById('queryResults').style.display = 'none';
+                document.getElementById('querySearchInput').value = '';
+            } catch (error) {
+                alert('✗ Error: ' + error.message);
+            } finally {
+                loadingEl.classList.remove('active');
+            }
+        }
+
+        async function prepareCheckOut(bookingId) {
+            try {
+                const { data: booking } = await supabaseClient
+                    .from('bookings')
+                    .select('*')
+                    .eq('id', bookingId)
+                    .single();
+
+                if (!booking) throw new Error('Booking not found');
+
+                currentCheckoutBooking = booking;
+                const propName = allProperties.find(p => p.id == booking.property_id)?.name || 'N/A';
+
+                // Calculate bill preview
+                const checkInDate = new Date(booking.check_in);
+                const checkOutDate = new Date(booking.check_out);
+                const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+                const roomCharges = nights * (booking.price_per_night || 0);
+                const modificationFee = booking.modification_fee || 0;
+                const otherCharges = booking.other_charges || 0;
+                const discount = booking.discount_amount || 0;
+                const subtotal = roomCharges + modificationFee + otherCharges - discount;
+
+                document.getElementById('checkoutDetailsList').innerHTML = `
+                    <p><strong>Booking ID:</strong> ${booking.id}</p>
+                    <p><strong>Guest:</strong> ${booking.guest_name}</p>
+                    <p><strong>Property:</strong> ${propName}</p>
+                    <p><strong>Check-in:</strong> ${booking.check_in}</p>
+                    <p><strong>Check-out:</strong> ${booking.check_out}</p>
+                    <p><strong>Nights:</strong> ${nights}</p>
+                `;
+
+                document.getElementById('billPreviewContent').innerHTML = `
+                    <div class="bill-row">
+                        <span class="bill-label">Room Charges (${nights} nights × ₹${Number(booking.price_per_night || 0).toLocaleString('en-IN')})</span>
+                        <span class="bill-value">₹${Number(roomCharges).toLocaleString('en-IN')}</span>
+                    </div>
+                    ${modificationFee > 0 ? `
+                    <div class="bill-row">
+                        <span class="bill-label">Modification Fee</span>
+                        <span class="bill-value">₹${Number(modificationFee).toLocaleString('en-IN')}</span>
+                    </div>
+                    ` : ''}
+                    ${otherCharges > 0 ? `
+                    <div class="bill-row">
+                        <span class="bill-label">Other Charges</span>
+                        <span class="bill-value">₹${Number(otherCharges).toLocaleString('en-IN')}</span>
+                    </div>
+                    ` : ''}
+                    ${discount > 0 ? `
+                    <div class="bill-row" style="color: #28a745;">
+                        <span class="bill-label">Discount</span>
+                        <span class="bill-value">-₹${Number(discount).toLocaleString('en-IN')}</span>
+                    </div>
+                    ` : ''}
+                    <div class="bill-row total">
+                        <span class="bill-label">Total</span>
+                        <span class="bill-value">₹${Number(subtotal).toLocaleString('en-IN')}</span>
+                    </div>
+                `;
+
+                document.getElementById('billPreview').style.display = 'block';
+                openModal('checkoutModal');
+            } catch (error) {
+                alert('✗ Error: ' + error.message);
+            }
+        }
+
+        async function submitCheckOut() {
+            if (!currentCheckoutBooking) {
+                alert('No booking selected');
+                return;
+            }
+
+            const loadingEl = document.getElementById('checkoutLoading');
+            loadingEl.classList.add('active');
+            loadingEl.textContent = 'Processing check-out...';
+
+            try {
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check_out_booking',
+                        args: {
+                            booking_id: BigInt(currentCheckoutBooking.id),
+                            user_id: currentUser.id
+                        }
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Check-out failed');
+                }
+
+                alert('✓ Check-out successful! Bill has been generated.');
+                closeModal('checkoutModal');
+                document.getElementById('queryResults').style.display = 'none';
+            } catch (error) {
+                alert('✗ Error: ' + error.message);
+            } finally {
+                loadingEl.classList.remove('active');
+            }
+        }
+
+        async function prepareCancel(bookingId) {
+            try {
+                const { data: booking } = await supabaseClient
+                    .from('bookings')
+                    .select('*')
+                    .eq('id', bookingId)
+                    .single();
+
+                if (!booking) throw new Error('Booking not found');
+
+                currentCancelBooking = booking;
+                const propName = allProperties.find(p => p.id == booking.property_id)?.name || 'N/A';
+
+                document.getElementById('cancelDetailsList').innerHTML = `
+                    <p><strong>Booking ID:</strong> ${booking.id}</p>
+                    <p><strong>Guest:</strong> ${booking.guest_name}</p>
+                    <p><strong>Property:</strong> ${propName}</p>
+                    <p><strong>Check-in:</strong> ${booking.check_in}</p>
+                    <p><strong>Check-out:</strong> ${booking.check_out}</p>
+                    <p><strong>Total Price:</strong> ₹${Number(booking.total_price).toLocaleString('en-IN')}</p>
+                    <p style="color: #ff6f00;"><strong>Current Status:</strong> ${booking.status.toUpperCase()}</p>
+                `;
+
+                document.getElementById('cancelDetails').style.display = 'block';
+                document.getElementById('cancelForm').style.display = 'block';
+                document.getElementById('cancelReason').value = '';
+
+                openModal('cancelBookingModal');
+            } catch (error) {
+                alert('✗ Error: ' + error.message);
+            }
+        }
+
         async function submitCancelBooking() {
             if (!currentCancelBooking) {
-                alert('Please find a booking first');
+                alert('No booking selected');
                 return;
             }
 
@@ -1275,88 +1575,170 @@
             loadingEl.textContent = 'Cancelling booking...';
 
             try {
-                const { error } = await supabaseClient
-                    .from('bookings')
-                    .update({
-                        status: 'cancelled',
-                        cancellation_reason: reason,
-                        cancelled_at: new Date().toISOString()
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'cancel_booking_with_reason',
+                        args: {
+                            booking_id: BigInt(currentCancelBooking.id),
+                            user_id: currentUser.id,
+                            cancellation_reason: reason || 'No reason provided'
+                        }
                     })
-                    .eq('id', currentCancelBooking.id);
+                });
 
-                if (error) {
-                    throw new Error(error.message);
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Cancellation failed');
                 }
 
-                alert('✓ Booking cancelled successfully');
+                alert('✓ Booking cancelled successfully!');
                 closeModal('cancelBookingModal');
-                currentCancelBooking = null;
+                document.getElementById('queryResults').style.display = 'none';
             } catch (error) {
-                alert('✗ Error cancelling booking: ' + error.message);
-                console.error('Cancel booking error:', error);
+                alert('✗ Error: ' + error.message);
             } finally {
                 loadingEl.classList.remove('active');
             }
         }
 
-        async function queryBookings() {
-            const property = document.getElementById('queryProperty').value;
-            const status = document.getElementById('queryStatus').value;
-
-            const loadingEl = document.getElementById('queryBookingLoading');
-            loadingEl.classList.add('active');
-            loadingEl.textContent = 'Searching bookings...';
-
+        async function viewBill(bookingId) {
             try {
-                let query = supabaseClient.from('bookings').select('*');
+                const response = await fetch(EDGE_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_bill',
+                        args: {
+                            booking_id: BigInt(bookingId),
+                            user_id: currentUser.id
+                        }
+                    })
+                });
 
-                if (property) {
-                    query = query.eq('property_id', parseInt(property));
-                }
-                if (status) {
-                    query = query.eq('status', status);
-                }
+                const result = await response.json();
 
-                const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
-
-                if (error) {
-                    throw new Error(error.message);
-                }
-
-                const resultsList = document.getElementById('queryResultsList');
-                if (!data || data.length === 0) {
-                    resultsList.innerHTML = '<tr><td colspan="10" style="text-align: center; color: #999; padding: 20px;">No bookings found</td></tr>';
-                } else {
-                    resultsList.innerHTML = data.map(b => {
-                        const createdDate = b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN') : 'N/A';
-                        return `
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 10px; font-weight: 600; color: #667eea;">${b.id}</td>
-                            <td style="padding: 10px;">${b.guest_name || 'N/A'}</td>
-                            <td style="padding: 10px;">${b.guest_phone || 'N/A'}</td>
-                            <td style="padding: 10px;">${propertyNames[b.property_id] || 'N/A'}</td>
-                            <td style="padding: 10px;">${roomNames[b.room_type] || b.room_type}</td>
-                            <td style="padding: 10px;">${b.check_in}</td>
-                            <td style="padding: 10px;">${b.check_out}</td>
-                            <td style="padding: 10px; font-weight: 600; color: #667eea;">₹${b.total_price?.toLocaleString('en-IN') || '0'}</td>
-                            <td style="padding: 10px;">
-                                <span style="padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: ${b.status === 'confirmed' ? '#d4edda' : b.status === 'cancelled' ? '#f8d7da' : b.status === 'completed' ? '#cce5ff' : '#fff3cd'}; color: ${b.status === 'confirmed' ? '#155724' : b.status === 'cancelled' ? '#721c24' : b.status === 'completed' ? '#004085' : '#856404'};">
-                                    ${b.status.toUpperCase()}
-                                </span>
-                            </td>
-                            <td style="padding: 10px; color: #999; font-size: 11px;">${createdDate}</td>
-                        </tr>
-                        `;
-                    }).join('');
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to fetch bill');
                 }
 
-                document.getElementById('queryResults').style.display = 'block';
+                const bill = result.bill;
+                currentBillData = bill;
+
+                const billHTML = `
+                    <div style="font-family: monospace; line-height: 1.8; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                        <h3 style="text-align: center; color: #667eea; margin-bottom: 20px;">BILL DETAILS</h3>
+
+                        <div style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+                            <p><strong>Bill ID:</strong> ${bill.bill_id || 'N/A'}</p>
+                            <p><strong>Booking ID:</strong> ${bill.booking_id}</p>
+                            <p><strong>Guest Name:</strong> ${bill.guest_name}</p>
+                            <p><strong>Property:</strong> ${allProperties.find(p => p.id == bill.property_id)?.name || 'N/A'}</p>
+                            <p><strong>Generated At:</strong> ${new Date(bill.generated_at).toLocaleString('en-IN')}</p>
+                        </div>
+
+                        <div style="margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 15px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">CHARGES BREAKDOWN</h4>
+                            <div class="bill-row" style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                <span>Room Charges:</span>
+                                <span>₹${Number(bill.room_charges || 0).toLocaleString('en-IN')}</span>
+                            </div>
+                            ${bill.modification_fee > 0 ? `
+                            <div class="bill-row" style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                <span>Modification Fee:</span>
+                                <span>₹${Number(bill.modification_fee).toLocaleString('en-IN')}</span>
+                            </div>
+                            ` : ''}
+                            ${bill.other_charges > 0 ? `
+                            <div class="bill-row" style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                <span>Other Charges:</span>
+                                <span>₹${Number(bill.other_charges).toLocaleString('en-IN')}</span>
+                            </div>
+                            ` : ''}
+                            ${bill.discount_amount > 0 ? `
+                            <div class="bill-row" style="display: flex; justify-content: space-between; padding: 8px 0; color: #28a745;">
+                                <span>Discount:</span>
+                                <span>-₹${Number(bill.discount_amount).toLocaleString('en-IN')}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid #667eea;">
+                                <strong>Subtotal:</strong>
+                                <strong>₹${Number(bill.subtotal || 0).toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 2px solid #667eea;">
+                                <strong>Tax:</strong>
+                                <strong>₹${Number(bill.tax_amount || 0).toLocaleString('en-IN')}</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 12px 0; font-size: 18px; color: #667eea;">
+                                <strong>TOTAL:</strong>
+                                <strong>₹${Number(bill.total_amount || 0).toLocaleString('en-IN')}</strong>
+                            </div>
+                        </div>
+
+                        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 20px;">
+                            Thank you for your stay!
+                        </p>
+                    </div>
+                `;
+
+                document.getElementById('billContent').innerHTML = billHTML;
+                openModal('viewBillModal');
             } catch (error) {
-                alert('✗ Error querying bookings: ' + error.message);
-                console.error('Query bookings error:', error);
-            } finally {
-                loadingEl.classList.remove('active');
+                alert('✗ Error: ' + error.message);
             }
+        }
+
+        function printBill() {
+            if (!currentBillData) {
+                alert('No bill data available');
+                return;
+            }
+
+            const printWindow = window.open('', '', 'width=600,height=800');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Bill - Booking ${currentBillData.booking_id}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        h1 { text-align: center; color: #667eea; }
+                        .content { margin-top: 20px; }
+                        .row { display: flex; justify-content: space-between; padding: 10px 0; }
+                        .total { border-top: 2px solid #667eea; font-weight: bold; font-size: 16px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>BILL DETAILS</h1>
+                    <div class="content">
+                        <p><strong>Bill ID:</strong> ${currentBillData.bill_id}</p>
+                        <p><strong>Booking ID:</strong> ${currentBillData.booking_id}</p>
+                        <p><strong>Guest:</strong> ${currentBillData.guest_name}</p>
+                        <hr>
+                        <div class="row">
+                            <span>Room Charges:</span>
+                            <span>₹${Number(currentBillData.room_charges).toLocaleString('en-IN')}</span>
+                        </div>
+                        ${currentBillData.modification_fee > 0 ? `
+                        <div class="row">
+                            <span>Modification Fee:</span>
+                            <span>₹${Number(currentBillData.modification_fee).toLocaleString('en-IN')}</span>
+                        </div>
+                        ` : ''}
+                        <div class="row total">
+                            <span>TOTAL:</span>
+                            <span>₹${Number(currentBillData.total_amount).toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
         }
 
         function logout() {
