@@ -695,7 +695,7 @@
                     </div>
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
-                <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: manager@test.com / manager123</p>
+                <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234 or joraba73@gmail.com / (your password)</p>
             </div>
         </div>
 
@@ -1093,47 +1093,132 @@
             }
 
             try {
-                // For demo purposes, accept specific credentials
-                // In production, this would authenticate against Supabase Auth
-                if (email === 'manager@test.com' && password === 'manager123') {
-                    // This is a demo user - in real implementation would be 'hotel_admin' with propertyId
-                    // For testing, we'll simulate a property manager login
-                    currentUser = {
-                        userId: '830ab482-6dd6-42a6-80b8-889c8a896729',  // Test user ID
-                        email: email,
-                        role: 'hotel_admin',
-                        propertyId: 1,
-                        propertyName: 'Mackey Garden'
-                    };
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    updateUIForLoggedInUser();
-                    filterPropertyDropdown();
-                    console.log('[AUTH] ✅ Login successful:', currentUser);
-                } else if (email === 'admin@test.com' && password === 'admin123') {
-                    // Super admin
-                    currentUser = {
-                        userId: 'super-admin-user-id',
-                        email: email,
-                        role: 'hotel_admin',
-                        propertyId: null,
-                        propertyName: null
-                    };
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    updateUIForLoggedInUser();
-                    filterPropertyDropdown();
-                    console.log('[AUTH] ✅ Admin login successful:', currentUser);
-                } else {
-                    alert('Invalid email or password');
+                // Initialize Supabase if not already done
+                if (!supabaseInitialized && window.supabase) {
+                    initializeSupabase();
                 }
+
+                if (!supabase) {
+                    console.error('[AUTH] ❌ Supabase client not initialized');
+                    alert('System error: Authentication service not available. Please refresh the page.');
+                    return;
+                }
+
+                console.log('[AUTH] Attempting to authenticate user:', email);
+
+                // Authenticate with Supabase Auth
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) {
+                    console.error('[AUTH] ❌ Authentication failed:', authError);
+                    alert('Invalid email or password');
+                    return;
+                }
+
+                if (!authData.user) {
+                    console.error('[AUTH] ❌ No user returned from auth');
+                    alert('Login failed: User not found');
+                    return;
+                }
+
+                const userId = authData.user.id;
+                console.log('[AUTH] ✅ User authenticated:', userId);
+
+                // Get user's admin role and property assignment from admin_users table
+                console.log('[AUTH] Fetching admin user details...');
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/admin_users?user_id=eq.${userId}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    console.error('[AUTH] ❌ Failed to fetch admin details:', response.statusText);
+                    alert('Failed to load user details');
+                    return;
+                }
+
+                const adminUsers = await response.json();
+
+                if (!adminUsers || adminUsers.length === 0) {
+                    console.error('[AUTH] ❌ No admin record found for user');
+                    alert('User is not authorized as a hotel manager');
+                    return;
+                }
+
+                const adminUser = adminUsers[0];
+                let propertyName = null;
+
+                // If user has a property assignment, get the property name
+                if (adminUser.property_id) {
+                    console.log('[AUTH] Fetching property details for ID:', adminUser.property_id);
+                    const propResponse = await fetch(
+                        `${SUPABASE_URL}/rest/v1/properties?id=eq.${adminUser.property_id}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            }
+                        }
+                    );
+
+                    if (propResponse.ok) {
+                        const properties = await propResponse.json();
+                        if (properties && properties.length > 0) {
+                            propertyName = properties[0].name;
+                        }
+                    }
+                }
+
+                // Set current user
+                currentUser = {
+                    userId: userId,
+                    email: email,
+                    role: adminUser.role,
+                    propertyId: adminUser.property_id,
+                    propertyName: propertyName
+                };
+
+                // Store in localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('authToken', authData.session.access_token);
+
+                // Update UI
+                updateUIForLoggedInUser();
+                filterPropertyDropdown();
+
+                console.log('[AUTH] ✅ Login successful:', currentUser);
+
             } catch (error) {
                 console.error('[AUTH] Login error:', error);
                 alert('Login failed: ' + error.message);
             }
         }
 
-        function handleLogout() {
+        async function handleLogout() {
+            try {
+                // Sign out from Supabase if client is available
+                if (supabase) {
+                    await supabase.auth.signOut();
+                }
+            } catch (error) {
+                console.error('[AUTH] Error signing out from Supabase:', error);
+            }
+
             currentUser = null;
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
 
             // Reset form
             resetBooking();
