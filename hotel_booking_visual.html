@@ -669,100 +669,6 @@
     </style>
 </head>
 <body>
-    <script>
-        // ===== AUTHENTICATION CHECK =====
-        // Verify user is logged in as manager or super admin
-        function checkAuthentication() {
-            const authToken = localStorage.getItem('authToken');
-            const userStr = localStorage.getItem('user');
-
-            // Check if auth token exists
-            if (!authToken) {
-                console.warn('[AUTH] No authentication token found');
-                showAuthError('Authentication Required', 'Please log in through the manager dashboard first.');
-                return false;
-            }
-
-            // Check if user data exists
-            if (!userStr) {
-                console.warn('[AUTH] No user data found');
-                showAuthError('Authentication Required', 'Please log in through the manager dashboard first.');
-                return false;
-            }
-
-            try {
-                const user = JSON.parse(userStr);
-
-                // Check if user has valid role
-                const validRoles = ['super_admin', 'hotel_manager', 'manager'];
-                if (!user.role || !validRoles.includes(user.role)) {
-                    console.warn('[AUTH] User role not authorized:', user.role);
-                    showAuthError('Access Denied', `Only managers and super admins can access this. Your role: ${user.role}`);
-                    return false;
-                }
-
-                console.log('[AUTH] ✅ User authenticated:', user.email, 'Role:', user.role);
-                return true;
-            } catch (error) {
-                console.error('[AUTH] Error parsing user data:', error);
-                showAuthError('Authentication Error', 'There was an error verifying your login. Please log in again.');
-                return false;
-            }
-        }
-
-        function showAuthError(title, message) {
-            // Create error screen
-            document.body.innerHTML = `
-                <div style="
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 20px;
-                ">
-                    <div style="
-                        background: white;
-                        border-radius: 12px;
-                        padding: 40px;
-                        text-align: center;
-                        max-width: 500px;
-                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                    ">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
-                        <h1 style="color: #d32f2f; margin-bottom: 15px; font-size: 24px;">${title}</h1>
-                        <p style="color: #666; margin-bottom: 30px; line-height: 1.6;">${message}</p>
-                        <p style="color: #999; font-size: 12px; margin-bottom: 20px;">
-                            You will be redirected to the login page in 3 seconds...
-                        </p>
-                        <a href="manager-login.html" style="
-                            display: inline-block;
-                            background: #667eea;
-                            color: white;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            text-decoration: none;
-                            font-weight: 600;
-                            transition: background 0.3s;
-                        " onmouseover="this.style.background='#764ba2'" onmouseout="this.style.background='#667eea'">
-                            🔑 Go to Manager Login
-                        </a>
-                    </div>
-                </div>
-            `;
-
-            // Auto redirect after 3 seconds
-            setTimeout(() => {
-                window.location.href = 'manager-login.html';
-            }, 3000);
-        }
-
-        // Run authentication check immediately
-        if (!checkAuthentication()) {
-            throw new Error('Authentication failed');
-        }
-    </script>
-
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div>
@@ -825,22 +731,14 @@
                 <div class="modification-fields" id="modificationFields">
                     <!-- Check-in Date -->
                     <div class="modify-field" id="field-checkin">
-                        <label>New Check-in Date</label>
-                        <p style="color: #666; font-size: 12px; margin: 0 0 10px 0;">📅 Click on a date below or enter manually</p>
-                        <div id="modifyCheckInCalendar" style="margin-bottom: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #e0e0e0; display: none;">
-                            <!-- Calendar will be inserted here -->
-                        </div>
-                        <input type="date" id="modifyCheckIn" placeholder="YYYY-MM-DD">
+                        <label for="modifyCheckIn">New Check-in Date</label>
+                        <input type="date" id="modifyCheckIn">
                     </div>
 
                     <!-- Check-out Date -->
                     <div class="modify-field" id="field-checkout">
-                        <label>New Check-out Date</label>
-                        <p style="color: #666; font-size: 12px; margin: 0 0 10px 0;">📅 Click on a date below or enter manually</p>
-                        <div id="modifyCheckOutCalendar" style="margin-bottom: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #e0e0e0; display: none;">
-                            <!-- Calendar will be inserted here -->
-                        </div>
-                        <input type="date" id="modifyCheckOut" placeholder="YYYY-MM-DD">
+                        <label for="modifyCheckOut">New Check-out Date</label>
+                        <input type="date" id="modifyCheckOut">
                     </div>
 
                     <!-- Guest Name -->
@@ -852,15 +750,20 @@
                     <!-- Room Type -->
                     <div class="modify-field" id="field-room">
                         <label for="modifyRoomType">New Room Type</label>
-                        <select id="modifyRoomType" onchange="handleRoomTypeChangeInModify()">
+                        <select id="modifyRoomType">
                             <option value="">Select room type...</option>
                         </select>
                     </div>
-                </div>
 
-                <!-- Note about Property -->
-                <div style="padding: 15px; background: #f0f7ff; border-left: 4px solid #667eea; border-radius: 4px; margin-bottom: 20px; color: #333; font-size: 13px;">
-                    <strong>📌 Property is locked:</strong> The property for this booking cannot be changed. You can only modify the room type, dates, and guest name.
+                    <!-- Property -->
+                    <div class="modify-field" id="field-property">
+                        <label for="modifyProperty">New Property</label>
+                        <select id="modifyProperty">
+                            <option value="">Select property...</option>
+                            <option value="1">Mackey Garden</option>
+                            <option value="2">Blossom Hotel</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="modification-actions" id="modificationActions">
@@ -1037,6 +940,20 @@
         let supabase = null;
         let supabaseInitialized = false;
         let supabaseInitRetries = 0;
+        let authToken = null;
+
+        // Retrieve auth token from localStorage
+        function retrieveAuthToken() {
+            authToken = localStorage.getItem('authToken');
+            if (authToken) {
+                console.log('[AUTH] ✅ Retrieved auth token from localStorage');
+            } else {
+                console.warn('[AUTH] ⚠️ No auth token found in localStorage');
+            }
+        }
+
+        // Call on page load
+        retrieveAuthToken();
 
         function initializeSupabase() {
             if (window.supabase) {
@@ -1061,23 +978,17 @@
             }
         }
 
-        // Check URL parameter to auto-switch to modify tab if needed
-        const urlParams = new URLSearchParams(window.location.search);
-        const mode = urlParams.get('mode');
-        if (mode === 'modify') {
-            console.log('[INIT] Auto-switching to Modify Booking tab');
-            setTimeout(() => {
-                switchTab('modify-booking');
-            }, 500);
-        }
-
         // Initial attempt
         initializeSupabase();
 
         // Also try after DOM ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeSupabase);
+            document.addEventListener('DOMContentLoaded', () => {
+                retrieveAuthToken();
+                initializeSupabase();
+            });
         } else {
+            retrieveAuthToken();
             setTimeout(initializeSupabase, 100);
         }
 
@@ -1319,9 +1230,14 @@
                     }
                 };
 
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
                 const response = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify(payload)
                 });
 
@@ -1438,9 +1354,14 @@
                     }
                 };
 
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
                 const response = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify(payload)
                 });
 
@@ -2356,9 +2277,14 @@
                 }
 
                 // Create booking
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
                 const response = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         name: 'create_booking',
                         args: {
@@ -2446,13 +2372,10 @@
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.innerHTML = `<div class="error" style="padding: 20px; background: #f8d7da; border: 2px solid #721c24; color: #721c24; border-radius: 8px; margin-bottom: 20px; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${message}</div>`;
-            // Scroll to top so user sees the message
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            // Keep error visible for 10 seconds instead of 5
+            errorDiv.innerHTML = `<div class="error">${message}</div>`;
             setTimeout(() => {
                 errorDiv.innerHTML = '';
-            }, 10000);
+            }, 5000);
         }
 
         function showSuccess(message) {
@@ -2503,9 +2426,16 @@
 
             try {
                 console.log('[FETCH BOOKING] ID:', bookingId, 'Phone:', phoneNumber);
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                    console.log('[FETCH BOOKING] Adding Authorization header');
+                }
+
                 const response = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         name: 'get_booking_details',
                         args: {
@@ -2613,18 +2543,14 @@
                 modificationForm.classList.add('show');
                 createModificationCheckboxes(true); // true = restrict to checkout only
             } else {
-                // Booking hasn't started - check if check-in can be modified (before 14:00 on check-in day)
-                const checkInAt2PM = new Date(currentBooking.check_in_date + 'T14:00:00');
-                const currentTime = new Date();
-                const canModifyCheckIn = currentTime <= checkInAt2PM;
-
+                // Booking hasn't started - allow all modifications
                 futureWarning.classList.remove('show');
                 modificationForm.classList.add('show');
-                createModificationCheckboxes(false, canModifyCheckIn); // pass canModifyCheckIn flag
+                createModificationCheckboxes(false); // false = allow all modifications
             }
         }
 
-        function createModificationCheckboxes(restrictToCheckoutOnly = false, canModifyCheckIn = true) {
+        function createModificationCheckboxes(restrictToCheckoutOnly = false) {
             if (!currentBooking) return;
 
             const checkboxGroup = document.getElementById('checkboxGroup');
@@ -2632,23 +2558,15 @@
                 { id: 'checkin', label: 'Check-in Date', field: 'field-checkin' },
                 { id: 'checkout', label: 'Check-out Date', field: 'field-checkout' },
                 { id: 'name', label: 'Guest Name', field: 'field-name' },
-                { id: 'room', label: 'Room Type', field: 'field-room' }
+                { id: 'room', label: 'Room Type', field: 'field-room' },
+                { id: 'property', label: 'Property', field: 'field-property' }
             ];
 
             checkboxGroup.innerHTML = fields.map(f => {
-                let isDisabled = false;
-                let tooltip = '';
-
-                if (restrictToCheckoutOnly && f.id !== 'checkout') {
-                    isDisabled = true;
-                    tooltip = ' title="Cannot modify while booking is active"';
-                } else if (f.id === 'checkin' && !canModifyCheckIn) {
-                    isDisabled = true;
-                    tooltip = ' title="Check-in date is locked (after 14:00 on check-in day)"';
-                }
-
+                const isDisabled = restrictToCheckoutOnly && f.id !== 'checkout';
                 const disabledClass = isDisabled ? 'opacity: 0.5; cursor: not-allowed;' : '';
                 const disabledAttr = isDisabled ? 'disabled' : '';
+                const tooltip = isDisabled ? ' title="Cannot modify while booking is active"' : '';
 
                 return `
                 <div class="checkbox-item" style="${disabledClass}">
@@ -2659,26 +2577,6 @@
             }).join('');
         }
 
-        function handleRoomTypeChangeInModify() {
-            // When room type is changed, update both calendars to show availability for the new room type
-            const newRoomType = document.getElementById('modifyRoomType').value;
-            if (!newRoomType || !currentBooking) return;
-
-            console.log('[ROOM TYPE CHANGE] Updating calendars for room type:', newRoomType);
-
-            // Update both check-in and check-out calendars with the new room type
-            const checkInContainer = document.getElementById('modifyCheckInCalendar');
-            const checkOutContainer = document.getElementById('modifyCheckOutCalendar');
-
-            if (checkInContainer && checkInContainer.style.display !== 'none') {
-                renderModifyCalendar('modifyCheckInCalendar', 'modifyCheckIn', currentBooking.property_name, newRoomType);
-            }
-
-            if (checkOutContainer && checkOutContainer.style.display !== 'none') {
-                renderModifyCalendar('modifyCheckOutCalendar', 'modifyCheckOut', currentBooking.property_name, newRoomType);
-            }
-        }
-
         function toggleModificationField(fieldId, fieldClass) {
             const checkbox = document.getElementById(`check-${fieldId}`);
             const field = document.getElementById(fieldClass);
@@ -2687,23 +2585,9 @@
             if (checkbox.checked) {
                 field.classList.add('active');
                 populateCurrentValues(fieldId);
-
-                // Show calendar for date fields
-                if (fieldId === 'checkin') {
-                    showModifyCalendarForCheckIn();
-                } else if (fieldId === 'checkout') {
-                    showModifyCalendarForCheckOut();
-                }
             } else {
                 field.classList.remove('active');
                 clearFieldValue(fieldId);
-
-                // Hide calendars
-                if (fieldId === 'checkin') {
-                    document.getElementById('modifyCheckInCalendar').style.display = 'none';
-                } else if (fieldId === 'checkout') {
-                    document.getElementById('modifyCheckOutCalendar').style.display = 'none';
-                }
             }
 
             // Show actions if any field is checked
@@ -2713,234 +2597,6 @@
             } else {
                 actions.classList.remove('show');
             }
-        }
-
-        // Helper function to render calendar for modify mode using same logic as create booking
-        function selectModifyDate(dateStr, inputFieldId, containerId) {
-            // Set the input value
-            document.getElementById(inputFieldId).value = dateStr;
-
-            // Remove 'selected' class from all days in this calendar
-            const calendarContainer = document.getElementById(containerId);
-            const allDays = calendarContainer.querySelectorAll('.day-item.selected');
-            allDays.forEach(day => {
-                day.classList.remove('selected');
-            });
-
-            // Add 'selected' class to the clicked day
-            const dayElement = document.getElementById(`day-modify-${dateStr}`);
-            if (dayElement) {
-                dayElement.classList.add('selected');
-            }
-
-            // Scroll into view
-            calendarContainer.scrollIntoView({behavior:'smooth'});
-        }
-
-        function renderModifyCalendar(containerId, inputFieldId, property, roomType) {
-            const calendarContainer = document.getElementById(containerId);
-            const today = getTodayDate();
-            const currentDate = new Date();
-
-            let html = '';
-            // Render 2 months like in create booking
-            for (let i = 0; i < 2; i++) {
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth() + i;
-                const { daysInMonth, startingDayOfWeek, monthName } = getMonthData(year, month);
-
-                html += `
-                    <div class="calendar">
-                        <div class="calendar-title">${monthName}</div>
-                        <div class="weekdays">
-                            <div class="weekday">Sun</div>
-                            <div class="weekday">Mon</div>
-                            <div class="weekday">Tue</div>
-                            <div class="weekday">Wed</div>
-                            <div class="weekday">Thu</div>
-                            <div class="weekday">Fri</div>
-                            <div class="weekday">Sat</div>
-                        </div>
-                        <div class="days">
-                `;
-
-                // Empty cells
-                for (let j = 0; j < startingDayOfWeek; j++) {
-                    html += '<div class="day empty"></div>';
-                }
-
-                // Days
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const isPast = dateStr < today;
-
-                    let classes = 'day';
-                    if (isPast) classes += ' disabled';
-                    else classes += ' available';
-
-                    const onclick = !isPast ? `selectModifyDate('${dateStr}', '${inputFieldId}', '${containerId}')` : '';
-                    html += `<div class="day-item ${classes}" id="day-modify-${dateStr}" ${onclick ? `onclick="${onclick}"` : ''} style="cursor: ${isPast ? 'not-allowed' : 'pointer'};">${day}</div>`;
-                }
-
-                html += '</div></div>';
-            }
-
-            calendarContainer.innerHTML = html;
-
-            // Load availability for this property/room
-            const cacheKey = getCacheKey(property, roomType);
-            if (isCacheValid(cacheKey)) {
-                console.log('[Modify Calendar] Using cached availability');
-                applyAvailabilityForModify(containerId, property, roomType);
-            } else {
-                console.log('[Modify Calendar] Loading availability for ' + property + ' - ' + roomType);
-                loadAvailabilityForModify(containerId, property, roomType, today);
-            }
-        }
-
-        async function loadAvailabilityForModify(containerId, property, roomType, today) {
-            try {
-                const endDate = addDays(today, 60);
-                const payload = {
-                    name: 'get_booked_dates',
-                    args: {
-                        property_name: property,
-                        room_type: roomType,
-                        start_date: today,
-                        end_date: endDate
-                    }
-                };
-
-                const response = await fetch(BOOKING_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-                if (data.success && data.booked_dates) {
-                    console.log('[Modify Calendar] Loaded ' + data.booked_dates.length + ' booked dates');
-
-                    // STORE DATA IN CACHE before applying
-                    const bookedDates = new Set(data.booked_dates || []);
-                    const cacheKey = getCacheKey(property, roomType);
-                    availabilityCache[cacheKey] = {
-                        dates: bookedDates,
-                        timestamp: Date.now(),
-                        property,
-                        roomType
-                    };
-                    console.log('[Modify Calendar] ✅ Cached availability data');
-
-                    applyAvailabilityForModify(containerId, property, roomType);
-                }
-            } catch (error) {
-                console.error('[Modify Calendar] Error loading availability:', error);
-            }
-        }
-
-        function applyAvailabilityForModify(containerId, property, roomType) {
-            try {
-                const cacheKey = getCacheKey(property, roomType);
-                const cacheData = availabilityCache[cacheKey];
-
-                if (!cacheData || !cacheData.dates) {
-                    console.log('[Modify Calendar] No cache data found');
-                    return;
-                }
-
-                const bookedDates = cacheData.dates;
-                console.log('[Modify Calendar] Applying ' + bookedDates.size + ' booked dates to calendar');
-
-                bookedDates.forEach(dateStr => {
-                    const dayElement = document.getElementById(`day-modify-${dateStr}`);
-                    if (dayElement) {
-                        dayElement.classList.remove('available');
-                        dayElement.classList.add('booked');
-                        dayElement.style.cursor = 'not-allowed';
-                        dayElement.onclick = null;
-                    }
-                });
-            } catch (error) {
-                console.error('[Modify Calendar] Error applying availability:', error);
-            }
-        }
-
-        async function showModifyCalendarForCheckIn() {
-            if (!currentBooking) return;
-
-            const calendarContainer = document.getElementById('modifyCheckInCalendar');
-            calendarContainer.style.display = 'block';
-            calendarContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #667eea;">📅 Loading calendar...</div>';
-
-            renderModifyCalendar('modifyCheckInCalendar', 'modifyCheckIn', currentBooking.property_name, currentBooking.room_type);
-        }
-
-        async function showModifyCalendarForCheckOut() {
-            if (!currentBooking) return;
-
-            const calendarContainer = document.getElementById('modifyCheckOutCalendar');
-            calendarContainer.style.display = 'block';
-            calendarContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #667eea;">📅 Loading calendar...</div>';
-
-            renderModifyCalendar('modifyCheckOutCalendar', 'modifyCheckOut', currentBooking.property_name, currentBooking.room_type);
-        }
-
-        function renderSimpleCalendar(containerId, bookedDates, onDateClick) {
-            const container = document.getElementById(containerId);
-            const today = new Date();
-            const currentMonth = today.getMonth();
-            const currentYear = today.getFullYear();
-
-            let html = '<div style="font-size: 12px;">';
-
-            // Render 3 months
-            for (let m = 0; m < 3; m++) {
-                const month = new Date(currentYear, currentMonth + m, 1);
-                const monthName = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-                html += `<div style="margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 10px 0; color: #333; font-size: 13px; font-weight: 600;">${monthName}</h4>
-                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;">`;
-
-                // Weekday headers
-                const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-                weekDays.forEach(day => {
-                    html += `<div style="text-align: center; font-weight: 600; color: #666; font-size: 11px; padding: 5px;">${day}</div>`;
-                });
-
-                // Get first day of month
-                const firstDay = month.getDay();
-                const daysInMonth = new Date(currentYear, currentMonth + m + 1, 0).getDate();
-
-                // Empty cells for days before month starts
-                for (let i = 0; i < firstDay; i++) {
-                    html += '<div></div>';
-                }
-
-                // Days of month
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${currentYear}-${String(currentMonth + m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const dateObj = new Date(currentYear, currentMonth + m, day);
-                    const isBooked = bookedDates.has(dateStr);
-                    const isPast = dateObj < today;
-
-                    const bg = isPast ? '#f5f5f5' : isBooked ? '#f8d7da' : '#d4edda';
-                    const color = isPast ? '#999' : isBooked ? '#721c24' : '#155724';
-                    const cursor = isPast || isBooked ? 'not-allowed' : 'pointer';
-
-                    html += `<button
-                        onclick="${isPast || isBooked ? '' : `document.getElementById('${containerId === 'modifyCheckInCalendar' ? 'modifyCheckIn' : 'modifyCheckOut'}'). value='${dateStr}'`}"
-                        style="padding: 8px; background: ${bg}; color: ${color}; border: 1px solid #ddd; border-radius: 4px; cursor: ${cursor}; font-size: 12px; font-weight: 500; ${cursor === 'pointer' ? 'transition: all 0.2s;' : 'opacity: 0.5;'}"
-                        ${isPast || isBooked ? 'disabled' : ''}
-                    >${day}</button>`;
-                }
-
-                html += '</div></div>';
-            }
-
-            html += '</div>';
-            container.innerHTML = html;
         }
 
         function populateCurrentValues(fieldId) {
@@ -2958,6 +2614,12 @@
                     break;
                 case 'room':
                     populateRoomTypeSelect();
+                    break;
+                case 'property':
+                    // Convert property name to ID
+                    const propertyNameToId = { 'Mackey Garden': '1', 'Blossom Hotel': '2' };
+                    const propertyId = propertyNameToId[currentBooking.property_name] || '1';
+                    document.getElementById('modifyProperty').value = propertyId;
                     break;
             }
         }
@@ -2997,6 +2659,9 @@
                     break;
                 case 'room':
                     document.getElementById('modifyRoomType').value = '';
+                    break;
+                case 'property':
+                    document.getElementById('modifyProperty').value = '';
                     break;
             }
         }
@@ -3039,7 +2704,16 @@
                 }
                 modifications.room_type = document.getElementById('modifyRoomType').value;
             }
-            // Property cannot be modified - it's locked to the original property
+            if (document.getElementById('check-property').checked) {
+                if (hasBookingStarted) {
+                    showError('❌ Cannot modify property while booking is active');
+                    return;
+                }
+                // Convert property ID to name
+                const propertyId = document.getElementById('modifyProperty').value;
+                const propertyMap = { '1': 'Mackey Garden', '2': 'Blossom Hotel' };
+                modifications.property_name = propertyMap[propertyId] || propertyId;
+            }
 
             if (Object.keys(modifications).length === 0) {
                 showError('❌ Please select at least one field to modify');
@@ -3081,9 +2755,14 @@
 
                 // STEP 1: Fetch current booking state BEFORE modification
                 console.log('[FETCH CURRENT STATE] Getting booking state before modification...');
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
                 const currentStateResponse = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         name: 'get_booking_details',
                         args: {
@@ -3114,9 +2793,14 @@
                 console.log('[BOOKING BEFORE CHANGE]', bookingBeforeChange);
 
                 // STEP 2: Now apply the modification
+                const modifyHeaders = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    modifyHeaders['Authorization'] = `Bearer ${authToken}`;
+                }
+
                 const response = await fetch(BOOKING_FUNCTIONS_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: modifyHeaders,
                     body: JSON.stringify({
                         name: 'modify_booking',
                         args: {
@@ -3176,7 +2860,7 @@
                 } else {
                     console.error('[MODIFICATION FAILED]', data);
                     const errorMsg = data.error || 'Modification failed. Please try different dates.';
-                    showError(`❌ MODIFICATION FAILED\n\nError: ${errorMsg}\n\nPlease verify:\n✓ Check-in date is not in the past\n✓ Check-out is after check-in\n✓ Selected room is available for ALL the new dates\n\nTip: Go back and select the room type again to see which dates are available (green = available, grey = booked)`);
+                    showError('❌ Modification Failed\n\n' + errorMsg + '\n\nPlease check:\n• Check-in date is not in the past\n• Check-out is after check-in\n• Room is available for selected dates');
                 }
             } catch (error) {
                 showError('Error: ' + error.message);
