@@ -1337,7 +1337,11 @@
 
                 // Filter bookings that need checkout today
                 const checkoutTodayList = allLoadedBookings.filter(b => {
-                    if (!b.checked_in || b.checked_out || !b.check_out) return false;
+                    // Must not be already checked out
+                    if (b.checked_out || !b.check_out) return false;
+
+                    // Must be confirmed (not cancelled)
+                    if (b.status === 'cancelled') return false;
 
                     const checkOutDate = new Date(b.check_out);
                     checkOutDate.setHours(0, 0, 0, 0);
@@ -1346,6 +1350,8 @@
                 });
 
                 console.log('📅 Checkout Today bookings:', checkoutTodayList);
+                console.log('📅 Today date:', today);
+                console.log('📅 All bookings count:', allLoadedBookings.length);
                 displayCheckoutTodayWidget(checkoutTodayList);
             } catch (error) {
                 console.error('❌ Error loading checkout today bookings:', error);
