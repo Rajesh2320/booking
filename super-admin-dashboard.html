@@ -1364,16 +1364,23 @@
         }
 
         function displayCheckoutTodayWidget(bookings) {
+            console.log('🎯 displayCheckoutTodayWidget called with:', bookings.length, 'bookings');
+
             const container = document.getElementById('checkoutTodayContainer');
+            console.log('🔍 Container found:', !!container);
+
             if (!container) {
                 console.error('❌ checkoutTodayContainer not found');
                 return;
             }
 
             // Update the header with count - find the h4 in the parent widget
-            const widget = container.closest('div[style*="fef3c7"]');
+            const widget = container.closest('div');
+            console.log('🔍 Widget found:', !!widget);
+
             if (widget) {
-                const h4 = widget.querySelector('h4');
+                const h4 = widget.parentElement.querySelector('h4');
+                console.log('🔍 H4 found:', !!h4);
                 if (h4) {
                     if (bookings.length === 0) {
                         h4.innerHTML = '📋 Checkouts Scheduled for Today <span style="color: #92400e; margin-left: 10px; font-size: 13px;">(0)</span>';
@@ -1384,6 +1391,7 @@
             }
 
             if (bookings.length === 0) {
+                console.log('✓ No checkouts today');
                 container.innerHTML = `
                     <div style="text-align: center; padding: 30px; color: #6b7280;">
                         <p style="font-size: 14px;">✓ No checkouts scheduled for today</p>
@@ -1391,6 +1399,8 @@
                 `;
                 return;
             }
+
+            console.log('📊 Rendering', bookings.length, 'checkout(s)');
 
             let html = `
                 <div style="overflow-x: auto;">
@@ -1431,7 +1441,9 @@
                 </div>
             `;
 
+            console.log('✅ Setting container HTML with', bookings.length, 'bookings');
             container.innerHTML = html;
+            console.log('✅ Container HTML set successfully');
         }
 
         function prepareModifyCheckout(bookingId) {
