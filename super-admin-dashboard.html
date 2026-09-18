@@ -743,56 +743,64 @@
 
         <!-- Query Bookings Modal -->
         <div id="queryBookingModal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 1000px;">
                 <div class="modal-header">
                     <span>🔍 Query Bookings</span>
                     <button class="modal-close" onclick="closeModal('queryBookingModal')">✕</button>
                 </div>
                 <div class="form-section">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="querySearchType">Search By</label>
-                            <select id="querySearchType">
-                                <option value="">Select search type...</option>
-                                <option value="booking_id">Booking ID</option>
-                                <option value="guest_name">Guest Name</option>
-                                <option value="phone">Phone Number</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="querySearchInput">Search Term</label>
-                            <input type="text" id="querySearchInput" placeholder="Enter search term">
-                        </div>
-                        <div class="form-group">
-                            <label for="queryProperty">Property (Optional)</label>
-                            <select id="queryProperty">
-                                <option value="">All properties</option>
-                            </select>
-                        </div>
-                        <div class="form-group form-full">
-                            <button onclick="queryBookings()" style="width: auto;">Search Bookings</button>
+                    <!-- Search/Filter Panel -->
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #667eea; margin-bottom: 12px;">🔎 Filter Bookings</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="filterSearchType">Search By</label>
+                                <select id="filterSearchType" onchange="filterBookings()">
+                                    <option value="">All Bookings</option>
+                                    <option value="booking_id">Booking ID</option>
+                                    <option value="guest_name">Guest Name</option>
+                                    <option value="phone">Phone Number</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="filterSearchInput">Search Term</label>
+                                <input type="text" id="filterSearchInput" placeholder="Enter search term (optional)" oninput="filterBookings()">
+                            </div>
+                            <div class="form-group">
+                                <label for="filterStatus">Status Filter</label>
+                                <select id="filterStatus" onchange="filterBookings()">
+                                    <option value="">All Statuses</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <div id="queryResults" style="display: none; margin-top: 20px;">
+
+                    <!-- Bookings Table -->
+                    <div id="queryResults" style="display: none;">
                         <div style="overflow-x: auto;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                                 <thead>
                                     <tr style="background: #f5f5f5;">
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Booking ID</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Guest</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Phone</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Property</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-in</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Check-out</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Total</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Status</th>
-                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Actions</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Booking ID</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 100px;">Guest Name</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Phone</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 100px;">Property</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Check-in</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Check-out</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Total</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 80px;">Status</th>
+                                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; min-width: 180px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="queryResultsList"></tbody>
                             </table>
                         </div>
+                        <p id="noResultsMsg" style="text-align: center; color: #999; padding: 20px;">No bookings found</p>
                     </div>
+
                     <div class="loading" id="queryBookingLoading"></div>
                 </div>
             </div>
@@ -1218,6 +1226,10 @@
 
         function openModal(modalId) {
             document.getElementById(modalId).classList.add('active');
+            // Load all bookings when query modal opens
+            if (modalId === 'queryBookingModal') {
+                loadAllBookings();
+            }
         }
 
         function closeModal(modalId) {
@@ -1253,19 +1265,12 @@
             'super_deluxe': 'Super Deluxe'
         };
 
-        async function queryBookings() {
-            const searchType = document.getElementById('querySearchType').value;
-            const searchInput = document.getElementById('querySearchInput').value;
-            const propertyId = document.getElementById('queryProperty').value;
+        let allLoadedBookings = []; // Store all loaded bookings for filtering
 
-            if (!searchType || !searchInput) {
-                alert('Please select a search type and enter a search term');
-                return;
-            }
-
+        async function loadAllBookings() {
             const loadingEl = document.getElementById('queryBookingLoading');
             loadingEl.classList.add('active');
-            loadingEl.textContent = 'Searching bookings...';
+            loadingEl.textContent = 'Loading all bookings...';
 
             try {
                 const response = await fetch(EDGE_FUNCTION_URL, {
@@ -1275,9 +1280,9 @@
                         action: 'get_bookings',
                         args: {
                             user_id: currentUser.id,
-                            property_id: propertyId ? BigInt(propertyId) : null,
-                            search_term: searchInput,
-                            search_type: searchType
+                            property_id: null,  // No filter - get all
+                            search_term: '',    // No search
+                            search_type: ''     // No search type
                         }
                     })
                 });
@@ -1288,67 +1293,106 @@
                     throw new Error(result.message || 'Failed to fetch bookings');
                 }
 
-                const bookings = result.bookings || [];
-                const resultsList = document.getElementById('queryResultsList');
-
-                if (bookings.length === 0) {
-                    resultsList.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #999; padding: 20px;">No bookings found</td></tr>';
-                } else {
-                    resultsList.innerHTML = bookings.map(b => {
-                        const checkInDate = b.check_in ? new Date(b.check_in).toLocaleDateString('en-IN') : 'N/A';
-                        const checkOutDate = b.check_out ? new Date(b.check_out).toLocaleDateString('en-IN') : 'N/A';
-                        const propName = allProperties.find(p => p.id == b.property_id)?.name || 'N/A';
-
-                        const statusColor = b.status === 'confirmed' ? '#d4edda' :
-                                          b.status === 'cancelled' ? '#f8d7da' :
-                                          b.status === 'completed' ? '#cce5ff' : '#fff3cd';
-                        const statusTextColor = b.status === 'confirmed' ? '#155724' :
-                                               b.status === 'cancelled' ? '#721c24' :
-                                               b.status === 'completed' ? '#004085' : '#856404';
-
-                        let actionButtons = '';
-                        if (b.status === 'confirmed') {
-                            if (!b.checked_in) {
-                                actionButtons += `<button class="action-btn checkin" onclick="prepareCheckIn(${b.id})">Check-in</button>`;
-                            }
-                            if (b.checked_in && !b.checked_out) {
-                                actionButtons += `<button class="action-btn checkout" onclick="prepareCheckOut(${b.id})">Check-out</button>`;
-                            }
-                            actionButtons += `<button class="action-btn cancel" onclick="prepareCancel(${b.id})">Cancel</button>`;
-                        }
-                        if (b.checked_out) {
-                            actionButtons += `<button class="action-btn bill" onclick="viewBill(${b.id})">View Bill</button>`;
-                        }
-
-                        return `
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 10px; font-weight: 600; color: #667eea;">${b.id}</td>
-                            <td style="padding: 10px;">${b.guest_name || 'N/A'}</td>
-                            <td style="padding: 10px;">${b.guest_phone || 'N/A'}</td>
-                            <td style="padding: 10px;">${propName}</td>
-                            <td style="padding: 10px;">${checkInDate}</td>
-                            <td style="padding: 10px;">${checkOutDate}</td>
-                            <td style="padding: 10px; font-weight: 600; color: #667eea;">₹${Number(b.total_price || 0).toLocaleString('en-IN')}</td>
-                            <td style="padding: 10px;">
-                                <span style="padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: ${statusColor}; color: ${statusTextColor};">
-                                    ${b.status.toUpperCase()}
-                                </span>
-                            </td>
-                            <td style="padding: 10px; white-space: nowrap; font-size: 11px;">
-                                ${actionButtons}
-                            </td>
-                        </tr>
-                        `;
-                    }).join('');
-                }
-
+                allLoadedBookings = result.bookings || [];
                 document.getElementById('queryResults').style.display = 'block';
+                displayFilteredBookings(allLoadedBookings);
+
             } catch (error) {
-                alert('✗ Error: ' + error.message);
-                console.error('Query bookings error:', error);
+                console.error('Error loading bookings:', error);
+                allLoadedBookings = [];
+                document.getElementById('queryResults').style.display = 'block';
+                document.getElementById('queryResultsList').innerHTML = '<tr><td colspan="9" style="text-align: center; color: #999; padding: 20px;">Error: ' + error.message + '</td></tr>';
             } finally {
                 loadingEl.classList.remove('active');
             }
+        }
+
+        function filterBookings() {
+            const searchType = document.getElementById('filterSearchType').value;
+            const searchInput = document.getElementById('filterSearchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            let filtered = allLoadedBookings;
+
+            // Apply status filter
+            if (statusFilter) {
+                filtered = filtered.filter(b => b.status === statusFilter);
+            }
+
+            // Apply search filter
+            if (searchType && searchInput) {
+                filtered = filtered.filter(b => {
+                    if (searchType === 'booking_id') {
+                        return String(b.id).toLowerCase().includes(searchInput);
+                    } else if (searchType === 'guest_name') {
+                        return (b.guest_name || '').toLowerCase().includes(searchInput);
+                    } else if (searchType === 'phone') {
+                        return (b.guest_phone || '').toLowerCase().includes(searchInput);
+                    }
+                    return false;
+                });
+            }
+
+            displayFilteredBookings(filtered);
+        }
+
+        function displayFilteredBookings(bookings) {
+            const resultsList = document.getElementById('queryResultsList');
+            const noResultsMsg = document.getElementById('noResultsMsg');
+
+            if (bookings.length === 0) {
+                resultsList.innerHTML = '';
+                noResultsMsg.style.display = 'block';
+                return;
+            }
+
+            noResultsMsg.style.display = 'none';
+            resultsList.innerHTML = bookings.map(b => {
+                const checkInDate = b.check_in ? new Date(b.check_in).toLocaleDateString('en-IN') : 'N/A';
+                const checkOutDate = b.check_out ? new Date(b.check_out).toLocaleDateString('en-IN') : 'N/A';
+                const propName = allProperties.find(p => p.id == b.property_id)?.name || 'N/A';
+
+                const statusColor = b.status === 'confirmed' ? '#d4edda' :
+                    b.status === 'cancelled' ? '#f8d7da' :
+                    b.status === 'completed' ? '#cce5ff' : '#fff3cd';
+                const statusTextColor = b.status === 'confirmed' ? '#155724' :
+                    b.status === 'cancelled' ? '#721c24' :
+                    b.status === 'completed' ? '#004085' : '#856404';
+
+                let actionButtons = '';
+                if (b.status === 'confirmed') {
+                    if (!b.checked_in) {
+                        actionButtons += `<button class="action-btn checkin" onclick="prepareCheckIn(${b.id})">✓ Check-in</button> `;
+                    }
+                    if (b.checked_in && !b.checked_out) {
+                        actionButtons += `<button class="action-btn checkout" onclick="prepareCheckOut(${b.id})">⚡ Check-out</button> `;
+                    }
+                    actionButtons += `<button class="action-btn cancel" onclick="prepareCancel(${b.id})">❌ Cancel</button>`;
+                }
+                if (b.checked_out) {
+                    actionButtons += `<button class="action-btn bill" onclick="viewBill(${b.id})">📄 Bill</button>`;
+                }
+
+                return `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; font-weight: 600; color: #667eea;">${b.id}</td>
+                    <td style="padding: 10px;">${b.guest_name || 'N/A'}</td>
+                    <td style="padding: 10px;">${b.guest_phone || 'N/A'}</td>
+                    <td style="padding: 10px;">${propName}</td>
+                    <td style="padding: 10px;">${checkInDate}</td>
+                    <td style="padding: 10px;">${checkOutDate}</td>
+                    <td style="padding: 10px; font-weight: 600; color: #667eea;">₹${Number(b.total_price || 0).toLocaleString('en-IN')}</td>
+                    <td style="padding: 10px;">
+                        <span style="padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; background: ${statusColor}; color: ${statusTextColor};">
+                            ${b.status.toUpperCase()}
+                        </span>
+                    </td>
+                    <td style="padding: 10px;">
+                        ${actionButtons}
+                    </td>
+                </tr>
+                `;
+            }).join('');
         }
 
         async function prepareCheckIn(bookingId) {
