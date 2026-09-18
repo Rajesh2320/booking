@@ -1422,7 +1422,7 @@
         async function checkAvailability(property, roomType, checkIn, checkOut) {
             try {
                 const payload = {
-                    name: 'check_availability',
+                    action: 'check_availability',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -1546,7 +1546,7 @@
 
                 // Call the new get_booked_dates endpoint (ONE API CALL instead of 60!)
                 const payload = {
-                    name: 'get_booked_dates',
+                    action: 'get_booked_dates',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -2495,7 +2495,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        name: 'create_booking',
+                        action: 'create_booking',
                         args: {
                             property_name: propertyNames[property],
                             room_type: roomType,
