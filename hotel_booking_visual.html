@@ -680,6 +680,34 @@
             </div>
         </div>
 
+        <!-- LOGIN SECTION (if not logged in) -->
+        <div id="loginSection" style="display: none; margin-bottom: 30px;">
+            <div style="background: #f0f4ff; border: 2px solid #667eea; border-radius: 8px; padding: 25px; text-align: center;">
+                <h2 style="color: #667eea; margin: 0 0 10px 0;">Hotel Manager Login</h2>
+                <p style="color: #666; margin: 0 0 20px 0; font-size: 14px;">You must log in to create or modify bookings</p>
+
+                <div style="max-width: 300px; margin: 0 auto;">
+                    <div style="margin-bottom: 15px;">
+                        <input type="email" id="loginEmail" placeholder="Email address" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
+                </div>
+                <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: manager@test.com / manager123</p>
+            </div>
+        </div>
+
+        <!-- USER INFO (if logged in) -->
+        <div id="userSection" style="display: none; margin-bottom: 20px; text-align: right;">
+            <div style="background: #e8f5e9; padding: 12px 15px; border-radius: 6px; display: inline-block; border-left: 4px solid #4caf50;">
+                <span style="color: #2e7d32; font-weight: 600;">👤 <span id="currentUserDisplay">-</span></span>
+                <span style="color: #666; font-size: 12px; margin-left: 15px;">(<span id="currentRoleDisplay">-</span>)</span>
+                <button onclick="handleLogout()" style="margin-left: 20px; padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">Log Out</button>
+            </div>
+        </div>
+
         <!-- TAB NAVIGATION -->
         <div class="tabs">
             <button class="tab-button active" onclick="switchTab('new-booking')">📝 New Booking</button>
@@ -836,7 +864,7 @@
             <div class="booking-form">
                 <div class="form-group">
                     <label for="property">Property</label>
-                    <select id="property" onchange="updateRoomTypes()">
+                    <select id="property" onchange="onPropertyChange()">
                         <option value="">Select property...</option>
                         <option value="1">Mackey Garden</option>
                         <option value="2">Blossom Hotel</option>
@@ -986,10 +1014,174 @@
             document.addEventListener('DOMContentLoaded', () => {
                 retrieveAuthToken();
                 initializeSupabase();
+                initializeUserAuth();
+                loadUserState();
             });
         } else {
             retrieveAuthToken();
             setTimeout(initializeSupabase, 100);
+            initializeUserAuth();
+            loadUserState();
+        }
+
+        // ============ USER AUTHENTICATION & RBAC ============
+        let currentUser = null;
+
+        function initializeUserAuth() {
+            // Check if user is logged in from localStorage
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('[AUTH] User loaded from localStorage:', currentUser);
+                    updateUIForLoggedInUser();
+                    filterPropertyDropdown();
+                } catch (e) {
+                    console.error('[AUTH] Error parsing saved user:', e);
+                    localStorage.removeItem('currentUser');
+                }
+            } else {
+                showLoginSection();
+            }
+        }
+
+        function loadUserState() {
+            if (currentUser) {
+                console.log('[AUTH] Current user state:', currentUser);
+            }
+        }
+
+        function showLoginSection() {
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('userSection').style.display = 'none';
+            document.querySelector('.booking-section').style.display = 'none';
+            document.getElementById('modificationSection').style.display = 'none';
+        }
+
+        function showAppSection() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('userSection').style.display = 'block';
+            document.querySelector('.booking-section').style.display = 'block';
+        }
+
+        function updateUIForLoggedInUser() {
+            if (!currentUser) return;
+
+            const userDisplay = document.getElementById('currentUserDisplay');
+            const roleDisplay = document.getElementById('currentRoleDisplay');
+
+            userDisplay.textContent = `${currentUser.email}`;
+
+            let roleText = currentUser.role;
+            if (currentUser.role === 'hotel_admin' && currentUser.propertyId) {
+                roleText = `Property Manager - ${currentUser.propertyName}`;
+            } else if (currentUser.role === 'hotel_admin' && !currentUser.propertyId) {
+                roleText = 'Super Admin';
+            }
+
+            roleDisplay.textContent = roleText;
+            showAppSection();
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+
+            try {
+                // For demo purposes, accept specific credentials
+                // In production, this would authenticate against Supabase Auth
+                if (email === 'manager@test.com' && password === 'manager123') {
+                    // This is a demo user - in real implementation would be 'hotel_admin' with propertyId
+                    // For testing, we'll simulate a property manager login
+                    currentUser = {
+                        userId: '830ab482-6dd6-42a6-80b8-889c8a896729',  // Test user ID
+                        email: email,
+                        role: 'hotel_admin',
+                        propertyId: 1,
+                        propertyName: 'Mackey Garden'
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    updateUIForLoggedInUser();
+                    filterPropertyDropdown();
+                    console.log('[AUTH] ✅ Login successful:', currentUser);
+                } else if (email === 'admin@test.com' && password === 'admin123') {
+                    // Super admin
+                    currentUser = {
+                        userId: 'super-admin-user-id',
+                        email: email,
+                        role: 'hotel_admin',
+                        propertyId: null,
+                        propertyName: null
+                    };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    updateUIForLoggedInUser();
+                    filterPropertyDropdown();
+                    console.log('[AUTH] ✅ Admin login successful:', currentUser);
+                } else {
+                    alert('Invalid email or password');
+                }
+            } catch (error) {
+                console.error('[AUTH] Login error:', error);
+                alert('Login failed: ' + error.message);
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+
+            // Reset form
+            resetBooking();
+            resetModification();
+
+            // Show login section
+            showLoginSection();
+
+            // Clear login form
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+
+            console.log('[AUTH] ✅ Logged out');
+        }
+
+        function filterPropertyDropdown() {
+            const propertySelect = document.getElementById('property');
+
+            if (!currentUser) {
+                propertySelect.innerHTML = '<option value="">Select property...</option>';
+                return;
+            }
+
+            if (currentUser.role === 'hotel_admin' && currentUser.propertyId) {
+                // Property manager - show only assigned property (disabled)
+                propertySelect.innerHTML = `
+                    <option value="${currentUser.propertyId}">${currentUser.propertyName}</option>
+                `;
+                propertySelect.disabled = true;
+                propertySelect.style.backgroundColor = '#f5f5f5';
+                propertySelect.style.cursor = 'not-allowed';
+                propertySelect.title = `You are assigned to ${currentUser.propertyName} only`;
+
+                console.log('[RBAC] Property manager - property locked to:', currentUser.propertyName);
+            } else if (currentUser.role === 'hotel_admin' && !currentUser.propertyId) {
+                // Super admin - show all properties
+                propertySelect.disabled = false;
+                propertySelect.style.backgroundColor = 'white';
+                propertySelect.style.cursor = 'pointer';
+                propertySelect.title = '';
+                propertySelect.innerHTML = `
+                    <option value="">Select property...</option>
+                    <option value="1">Mackey Garden</option>
+                    <option value="2">Blossom Hotel</option>
+                `;
+
+                console.log('[RBAC] Super admin - all properties available');
+            }
         }
 
         /**
@@ -1200,6 +1392,15 @@
             updateCalendar();
         }
 
+        function onPropertyChange() {
+            // If user is a property manager and tries to change property, prevent it
+            if (currentUser && currentUser.role === 'hotel_admin' && currentUser.propertyId) {
+                console.log('[RBAC] Property manager cannot change property');
+                return false;
+            }
+            updateRoomTypes();
+        }
+
         function addDays(dateStr, days) {
             // Parse date parts to avoid timezone issues
             const [year, month, day] = dateStr.split('-').map(Number);
@@ -1221,7 +1422,7 @@
         async function checkAvailability(property, roomType, checkIn, checkOut) {
             try {
                 const payload = {
-                    action: 'check_availability',
+                    name: 'check_availability',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -1345,7 +1546,7 @@
 
                 // Call the new get_booked_dates endpoint (ONE API CALL instead of 60!)
                 const payload = {
-                    action: 'get_booked_dates',
+                    name: 'get_booked_dates',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -2265,6 +2466,14 @@
             confirmBtn.textContent = 'Processing...';
 
             try {
+                // Check if user is logged in
+                if (!currentUser) {
+                    showError('❌ You must be logged in to create a booking');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Booking';
+                    return;
+                }
+
                 // Final validation: Verify date range is still available
                 console.log('[Final Validation] Checking full date range availability');
                 const isFinalAvailable = await checkAvailability(property, roomType, selectedCheckIn, selectedCheckOut);
@@ -2286,14 +2495,15 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        action: 'create_booking',
+                        name: 'create_booking',
                         args: {
                             property_name: propertyNames[property],
                             room_type: roomType,
                             check_in: selectedCheckIn,
                             check_out: selectedCheckOut,
                             guest_name: guestName,
-                            guest_phone: guestPhone
+                            guest_phone: guestPhone,
+                            user_id: currentUser.userId
                         }
                     })
                 });
@@ -2337,7 +2547,14 @@
                     }, 15000);
                 } else {
                     console.log('[BOOKING FAILED]', data);
-                    showError(data.error || 'Booking failed');
+
+                    // Check if this is an authorization error
+                    if (data.error && data.error.includes('not authorized') || data.error.includes('not assigned')) {
+                        showError('❌ Authorization Error: ' + data.error + '\n\n(As a property manager, you can only create bookings for your assigned property)');
+                    } else {
+                        showError(data.error || 'Booking failed');
+                    }
+
                     confirmBtn.disabled = false;
                     confirmBtn.textContent = 'Confirm Booking';
                 }
@@ -2401,6 +2618,11 @@
                 tabButtons[0].classList.add('active');
                 tabButtons[1].classList.remove('active');
                 resetModification();
+
+                // Ensure property dropdown is properly filtered for RBAC
+                if (currentUser) {
+                    filterPropertyDropdown();
+                }
             } else {
                 bookingSection.classList.add('hidden');
                 modificationSection.classList.add('active');
@@ -2437,7 +2659,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        action: 'get_booking_details',
+                        name: 'get_booking_details',
                         args: {
                             booking_id: bookingId,
                             guest_phone: phoneNumber
@@ -2764,7 +2986,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        action: 'get_booking_details',
+                        name: 'get_booking_details',
                         args: {
                             booking_id: currentBooking.booking_id,
                             guest_phone: currentBooking.guest_phone
@@ -2802,7 +3024,7 @@
                     method: 'POST',
                     headers: modifyHeaders,
                     body: JSON.stringify({
-                        action: 'modify_booking',
+                        name: 'modify_booking',
                         args: {
                             booking_id: currentBooking.booking_id,
                             guest_phone: currentBooking.guest_phone,
