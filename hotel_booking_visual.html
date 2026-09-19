@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.40.2-MODIFICATION-UI-UPGRADE (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.40.3-DEBUGGING-AND-FIXES (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -795,7 +795,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.2-MODIFICATION-UI-UPGRADE</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.3-DEBUGGING-AND-FIXES</p>
             </div>
         </div>
 
@@ -2976,7 +2976,15 @@
 
             // Also populate readonly fields in the modification form
             document.getElementById('readonlyGuestName').textContent = currentBooking.guest_name || '-';
-            document.getElementById('readonlyProperty').textContent = currentBooking.property_name || '-';
+
+            // Get property name - handle cases where property_name might be missing
+            let propertyDisplay = currentBooking.property_name || '-';
+            if (!currentBooking.property_name && currentBooking.property_id) {
+                const propNames = { '1': 'Mackey Garden', '2': 'Blossom Hotel' };
+                propertyDisplay = propNames[currentBooking.property_id] || '-';
+            }
+            document.getElementById('readonlyProperty').textContent = propertyDisplay;
+
             document.getElementById('readonlyRoomType').textContent = currentBooking.room_type || '-';
             document.getElementById('readonlyCheckIn').textContent = currentBooking.check_in_date || '-';
             document.getElementById('readonlyCheckOut').textContent = currentBooking.check_out_date || '-';
@@ -3120,10 +3128,36 @@
         }
 
         async function checkAvailabilityForModify(roomType, checkIn, checkOut) {
-            if (!currentBooking) return;
+            if (!currentBooking) {
+                console.warn('[CHECK AVAILABILITY] No current booking');
+                return;
+            }
 
             try {
-                console.log('[CHECK AVAILABILITY FOR MODIFY]', { roomType, checkIn, checkOut, currentBookingId: currentBooking.booking_id });
+                console.log('[CHECK AVAILABILITY FOR MODIFY]', {
+                    roomType, checkIn, checkOut,
+                    currentBookingId: currentBooking.booking_id,
+                    propertyId: currentBooking.property_id
+                });
+
+                // Validate dates
+                const checkInDate = new Date(checkIn);
+                const checkOutDate = new Date(checkOut);
+                if (checkOutDate <= checkInDate) {
+                    document.getElementById('modifyAvailabilityStatus').innerHTML =
+                        `⚠️ <strong>Invalid Dates</strong> Check-out must be after check-in.`;
+                    document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#ff9800';
+                    document.getElementById('modifyAvailabilityStatus').style.background = '#fff3e0';
+                    document.getElementById('modifyAvailabilityStatus').style.color = '#e65100';
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('modifyAvailabilityStatus').innerHTML =
+                    `⏳ Checking availability...`;
+                document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#2196F3';
+                document.getElementById('modifyAvailabilityStatus').style.background = '#e3f2fd';
+                document.getElementById('modifyAvailabilityStatus').style.color = '#1565c0';
 
                 // Call edge function to check availability
                 const headers = { 'Content-Type': 'application/json' };
@@ -3151,23 +3185,47 @@
 
                 console.log('[AVAILABILITY RESPONSE]', data);
 
-                if (data.success && data.available) {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.result || 'Server error'}`);
+                }
+
+                // Debug: Log the full response
+                console.log('[AVAILABILITY CHECK - Full Response]', {
+                    status: response.status,
+                    success: data.success,
+                    available: data.available,
+                    conflicts: data.conflicts,
+                    message: data.message,
+                    result: data.result
+                });
+
+                if (!data.success) {
+                    throw new Error(data.result || 'Server returned error');
+                }
+
+                if (data.available === true) {
                     document.getElementById('modifyAvailabilityStatus').innerHTML =
-                        `✅ <strong>Available!</strong> This room type is available for your selected dates.`;
+                        `✅ <strong>Available!</strong> This room type is available for your selected dates (${roomType}).`;
                     document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#4caf50';
                     document.getElementById('modifyAvailabilityStatus').style.background = '#e8f5e9';
                     document.getElementById('modifyAvailabilityStatus').style.color = '#2e7d32';
-                } else {
+                } else if (data.available === false) {
                     document.getElementById('modifyAvailabilityStatus').innerHTML =
-                        `❌ <strong>Not Available</strong> (${data.conflicts || 'unknown'} conflicts). This room type has bookings during your selected dates.`;
+                        `❌ <strong>Not Available</strong> (${data.conflicts || 0} conflict${data.conflicts !== 1 ? 's' : ''}). This room type has bookings during your selected dates.`;
                     document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#e53935';
                     document.getElementById('modifyAvailabilityStatus').style.background = '#ffebee';
                     document.getElementById('modifyAvailabilityStatus').style.color = '#c62828';
+                } else {
+                    document.getElementById('modifyAvailabilityStatus').innerHTML =
+                        `ℹ️ Availability status: ${data.message || 'Unable to determine'}`;
+                    document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#ff9800';
+                    document.getElementById('modifyAvailabilityStatus').style.background = '#fff3e0';
+                    document.getElementById('modifyAvailabilityStatus').style.color = '#e65100';
                 }
             } catch (error) {
                 console.error('[AVAILABILITY CHECK ERROR]', error);
                 document.getElementById('modifyAvailabilityStatus').innerHTML =
-                    `⚠️ Could not check availability: ${error.message}`;
+                    `⚠️ Could not check availability: ${error.message}. The system will allow you to proceed.`;
                 document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#ff9800';
                 document.getElementById('modifyAvailabilityStatus').style.background = '#fff3e0';
                 document.getElementById('modifyAvailabilityStatus').style.color = '#e65100';
