@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.39.6-CONFIRMATION-AND-RESET-FIXES (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.6-CONFIRMATION-AND-RESET-FIXES</p>
             </div>
         </div>
 
@@ -962,7 +962,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.6-CONFIRMATION-AND-RESET-FIXES', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
         console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Changed API parameter from name→action to match deployed edge function requirements', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
@@ -2588,7 +2588,7 @@
                     const total = price * nights;
 
                     generateBookingPDF(
-                        data.confirmation_number,
+                        data.booking_id,
                         guestName,
                         guestPhone,
                         property,
@@ -2632,7 +2632,14 @@
         function resetBooking() {
             selectedCheckIn = null;
             selectedCheckOut = null;
-            document.getElementById('property').value = '';
+
+            // For property managers, preserve their assigned property; for super admins, clear it
+            if (currentUser && currentUser.role === 'hotel_admin' && currentUser.propertyId) {
+                document.getElementById('property').value = currentUser.propertyId;
+            } else {
+                document.getElementById('property').value = '';
+            }
+
             document.getElementById('roomType').value = '';
             document.getElementById('guestName').value = '';
             document.getElementById('guestPhone').value = '';
