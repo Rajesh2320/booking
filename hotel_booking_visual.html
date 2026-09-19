@@ -695,7 +695,7 @@
                     </div>
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
-                <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234 or joraba73@gmail.com / (your password)</p>
+                <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
             </div>
         </div>
 
@@ -958,11 +958,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmVjbXl5dXNpd212Y3RvaXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTc0MTQwOTEsImV4cCI6MTk5NzAzMDA5MX0.H8H1LWV8xtPFjjTbf0g70OYKAGKQAe-rLvXWbFSdxBc';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmVjbXl5dXNpd212Y3RvaXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NjA0OTEsImV4cCI6MjEwNTAzNjQ5MX0.xIkv_WBffIVilW-ADc8Tn3iwzpSbbQsZFrrXRqwkiSE';
 
         // Initialize Supabase client for PDF storage - with retry logic
         let supabase = null;
@@ -983,56 +983,43 @@
         // Call on page load
         retrieveAuthToken();
 
-        async function initializeSupabase() {
-            try {
-                // Try dynamic import first (most reliable)
-                console.log('[SUPABASE INIT] Attempting dynamic import...');
-                const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/+esm');
-                const { createClient } = supabaseModule;
-                supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-                supabaseInitialized = true;
-                console.log('[SUPABASE INIT] ✅ Client initialized successfully via dynamic import');
-                return true;
-            } catch (dynamicImportError) {
-                console.warn('[SUPABASE INIT] Dynamic import failed, trying UMD fallback...', dynamicImportError);
-
-                // Fallback to UMD script approach
-                if (window.supabase) {
-                    try {
-                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                        supabaseInitialized = true;
-                        console.log('[SUPABASE INIT] ✅ Client initialized successfully via UMD fallback');
-                        return true;
-                    } catch (umdError) {
-                        console.error('[SUPABASE INIT] ❌ UMD fallback failed:', umdError);
-                        return false;
-                    }
-                } else if (supabaseInitRetries < 5) {
-                    supabaseInitRetries++;
-                    console.warn(`[SUPABASE INIT] UMD library not loaded yet, retrying (${supabaseInitRetries}/5)...`);
-                    setTimeout(initializeSupabase, 500);
-                    return false;
-                } else {
-                    console.error('[SUPABASE INIT] ❌ Supabase library failed to initialize after 5 retries');
+        function initializeSupabase() {
+            if (window.supabase) {
+                try {
+                    const { createClient } = window.supabase;
+                    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+                    supabaseInitialized = true;
+                    console.log('[SUPABASE INIT] ✅ Client initialized successfully');
+                    return true;
+                } catch (error) {
+                    console.error('[SUPABASE INIT] ❌ Failed to initialize client:', error);
                     return false;
                 }
+            } else {
+                if (supabaseInitRetries < 5) {
+                    supabaseInitRetries++;
+                    console.warn(`[SUPABASE INIT] Library not loaded yet, retrying (${supabaseInitRetries}/5)...`);
+                    setTimeout(initializeSupabase, 500);
+                } else {
+                    console.error('[SUPABASE INIT] ❌ Supabase library failed to load from CDN after 5 retries');
+                }
+                return false;
             }
         }
 
-        // Initialize Supabase immediately when document is ready
+        // Initialize Supabase when document is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', async () => {
+            document.addEventListener('DOMContentLoaded', () => {
                 retrieveAuthToken();
-                await initializeSupabase();
+                initializeSupabase();
                 initializeUserAuth();
                 loadUserState();
             });
         } else {
             retrieveAuthToken();
-            initializeSupabase().then(() => {
-                initializeUserAuth();
-                loadUserState();
-            });
+            initializeSupabase();
+            initializeUserAuth();
+            loadUserState();
         }
 
         // ============ USER AUTHENTICATION & RBAC ============
