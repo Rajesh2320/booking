@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.2-EDGE-FUNCTION-AUDIT-FIX (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.39.3-AVAILABILITY-CACHE-FIX (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.2-EDGE-FUNCTION-AUDIT-FIX</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.3-AVAILABILITY-CACHE-FIX</p>
             </div>
         </div>
 
@@ -962,8 +962,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.2-EDGE-FUNCTION-AUDIT-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
-        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: All 6 edge function parameter mismatches resolved', 'color: #2196F3; font-size: 12px;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.3-AVAILABILITY-CACHE-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Removed broken get_booked_dates fallback - uses per-date checks', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
@@ -1632,55 +1632,16 @@
             try {
                 const endDate = addDays(today, 60);
 
-                console.log('[Cache] Starting availability fetch (1 API call) for ' + getRoomLabel(property, roomType));
+                console.log('[Cache] Starting availability fetch for ' + getRoomLabel(property, roomType));
                 console.log('[Cache] Date range: ' + today + ' to ' + endDate);
 
                 // DISABLED: get_booked_dates not implemented in edge function yet
-                // TODO: Implement get_booked_dates in booking-functions/index.ts
-                // For now, using standard check_availability per date
-                console.warn('[Cache] get_booked_dates not available - falling back to check_availability');
+                // This is an optimization - the calendar will use individual check_availability calls instead
+                // TODO: Implement get_booked_dates in booking-functions/index.ts for performance
+                console.log('[Cache] Using per-date availability checks (get_booked_dates not available)');
 
-                // Fallback: use check_availability to verify availability still works
-                const payload = {
-                    name: 'check_availability',
-                    args: {
-                        property_name: propertyNames[property],
-                        room_type: roomType,
-                        check_in: today,
-                        check_out: addDays(today, 1)
-                    }
-                };
-
-                const headers = { 'Content-Type': 'application/json' };
-                if (authToken) {
-                    headers['Authorization'] = `Bearer ${authToken}`;
-                }
-
-                const response = await fetch(BOOKING_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    console.error('[API Error] Status:', response.status, 'Data:', data);
-                    showError('Failed to load availability data');
-                    return;
-                }
-
-                // Track API call
-                apiCallCount++;
-
-                if (!data.success) {
-                    console.error('[Cache] Error:', data.error);
-                    showError('Failed to load availability: ' + data.error);
-                    return;
-                }
-
-                // Convert booked dates array to Set
-                const bookedDates = new Set(data.booked_dates || []);
+                // For now, populate cache with empty (will be filled by individual checks)
+                const bookedDates = new Set();
 
                 // Store in cache
                 const cacheKey = getCacheKey(property, roomType);
