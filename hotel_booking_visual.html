@@ -983,45 +983,56 @@
         // Call on page load
         retrieveAuthToken();
 
-        function initializeSupabase() {
-            if (window.supabase) {
-                try {
-                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                    supabaseInitialized = true;
-                    console.log('[SUPABASE INIT] ✅ Client initialized successfully');
-                    return true;
-                } catch (error) {
-                    console.error('[SUPABASE INIT] ❌ Failed to initialize client:', error);
+        async function initializeSupabase() {
+            try {
+                // Try dynamic import first (most reliable)
+                console.log('[SUPABASE INIT] Attempting dynamic import...');
+                const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/+esm');
+                const { createClient } = supabaseModule;
+                supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+                supabaseInitialized = true;
+                console.log('[SUPABASE INIT] ✅ Client initialized successfully via dynamic import');
+                return true;
+            } catch (dynamicImportError) {
+                console.warn('[SUPABASE INIT] Dynamic import failed, trying UMD fallback...', dynamicImportError);
+
+                // Fallback to UMD script approach
+                if (window.supabase) {
+                    try {
+                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                        supabaseInitialized = true;
+                        console.log('[SUPABASE INIT] ✅ Client initialized successfully via UMD fallback');
+                        return true;
+                    } catch (umdError) {
+                        console.error('[SUPABASE INIT] ❌ UMD fallback failed:', umdError);
+                        return false;
+                    }
+                } else if (supabaseInitRetries < 5) {
+                    supabaseInitRetries++;
+                    console.warn(`[SUPABASE INIT] UMD library not loaded yet, retrying (${supabaseInitRetries}/5)...`);
+                    setTimeout(initializeSupabase, 500);
+                    return false;
+                } else {
+                    console.error('[SUPABASE INIT] ❌ Supabase library failed to initialize after 5 retries');
                     return false;
                 }
-            } else {
-                if (supabaseInitRetries < 5) {
-                    supabaseInitRetries++;
-                    console.warn(`[SUPABASE INIT] Library not loaded yet, retrying (${supabaseInitRetries}/5)...`);
-                    setTimeout(initializeSupabase, 500);
-                } else {
-                    console.error('[SUPABASE INIT] ❌ Supabase library failed to load from CDN after 5 retries');
-                }
-                return false;
             }
         }
 
-        // Initial attempt
-        initializeSupabase();
-
-        // Also try after DOM ready
+        // Initialize Supabase immediately when document is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('DOMContentLoaded', async () => {
                 retrieveAuthToken();
-                initializeSupabase();
+                await initializeSupabase();
                 initializeUserAuth();
                 loadUserState();
             });
         } else {
             retrieveAuthToken();
-            setTimeout(initializeSupabase, 100);
-            initializeUserAuth();
-            loadUserState();
+            initializeSupabase().then(() => {
+                initializeUserAuth();
+                loadUserState();
+            });
         }
 
         // ============ USER AUTHENTICATION & RBAC ============
