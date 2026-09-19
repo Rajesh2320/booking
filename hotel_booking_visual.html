@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.4-AVAILABILITY-LOGGING-ENHANCEMENT (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.4-AVAILABILITY-LOGGING-ENHANCEMENT</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX</p>
             </div>
         </div>
 
@@ -962,8 +962,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.4-AVAILABILITY-LOGGING-ENHANCEMENT', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
-        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Enhancement: Added detailed logging to checkAvailability API calls for debugging', 'color: #2196F3; font-size: 12px;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.5-PARAMETER-MISMATCH-CRITICAL-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Changed API parameter from name→action to match deployed edge function requirements', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
@@ -1513,7 +1513,7 @@
         async function checkAvailability(property, roomType, checkIn, checkOut) {
             try {
                 const payload = {
-                    name: 'check_availability',
+                    action: 'check_availability',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -2560,7 +2560,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        name: 'create_booking',
+                        action: 'create_booking',
                         args: {
                             property_name: propertyNames[property],
                             room_type: roomType,
@@ -3090,7 +3090,7 @@
                     method: 'POST',
                     headers: modifyHeaders,
                     body: JSON.stringify({
-                        name: 'modify_booking',
+                        action: 'modify_booking',
                         args: {
                             booking_id: currentBooking.booking_id,
                             guest_phone: currentBooking.guest_phone,
