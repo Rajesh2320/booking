@@ -759,40 +759,26 @@
 
                 <div class="modification-fields" id="modificationFields">
                     <!-- Check-in Date -->
-                    <div class="modify-field" id="field-checkin">
-                        <label for="modifyCheckIn">New Check-in Date</label>
-                        <input type="date" id="modifyCheckIn">
+                    <div class="modify-field" id="field-checkin" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="check-checkin">
+                        <div style="flex: 1;">
+                            <label for="modifyCheckIn">New Check-in Date</label>
+                            <input type="date" id="modifyCheckIn">
+                        </div>
                     </div>
 
                     <!-- Check-out Date -->
-                    <div class="modify-field" id="field-checkout">
-                        <label for="modifyCheckOut">New Check-out Date</label>
-                        <input type="date" id="modifyCheckOut">
+                    <div class="modify-field" id="field-checkout" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="check-checkout">
+                        <div style="flex: 1;">
+                            <label for="modifyCheckOut">New Check-out Date</label>
+                            <input type="date" id="modifyCheckOut">
+                        </div>
                     </div>
 
-                    <!-- Guest Name -->
-                    <div class="modify-field" id="field-name">
-                        <label for="modifyGuestName">New Guest Name</label>
-                        <input type="text" id="modifyGuestName" placeholder="Enter full name">
-                    </div>
-
-                    <!-- Room Type -->
-                    <div class="modify-field" id="field-room">
-                        <label for="modifyRoomType">New Room Type</label>
-                        <select id="modifyRoomType">
-                            <option value="">Select room type...</option>
-                        </select>
-                    </div>
-
-                    <!-- Property -->
-                    <div class="modify-field" id="field-property">
-                        <label for="modifyProperty">New Property</label>
-                        <select id="modifyProperty">
-                            <option value="">Select property...</option>
-                            <option value="1">Mackey Garden</option>
-                            <option value="2">Blossom Hotel</option>
-                        </select>
-                    </div>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                        ℹ️ Currently you can modify check-in and check-out dates only. Please contact support for other modifications.
+                    </p>
                 </div>
 
                 <div class="modification-actions" id="modificationActions">
@@ -2746,6 +2732,9 @@
                         check_in,
                         check_out,
                         room_number,
+                        room_type,
+                        property_id,
+                        status,
                         property:properties(name)
                     `)
                     .eq('display_id', bookingId.toUpperCase())
@@ -2766,20 +2755,18 @@
                         guest_name: bookingData.guest_name,
                         guest_phone: bookingData.guest_phone,
                         property_name: bookingData.property?.name,
-                        property_id: data.property_id,
-                        room_type: data.room_type,
-                        room_number: data.room_number,
-                        check_in_date: data.check_in,
-                        check_out_date: data.check_out,
-                        check_in_time: data.check_in_time,
-                        check_out_time: data.check_out_time,
-                        status: data.status
+                        property_id: bookingData.property_id,
+                        room_type: bookingData.room_type,
+                        room_number: bookingData.room_number,
+                        check_in_date: bookingData.check_in,
+                        check_out_date: bookingData.check_out,
+                        status: bookingData.status
                     };
                     console.log('[BOOKING FOUND]', currentBooking);
                     displayCurrentBookingDetails();
                     checkIfFutureBooking();
                 } else {
-                    showError('❌ ' + (data.error || 'Booking not found. Please verify your Booking ID and Phone Number'));
+                    showError('❌ Booking not found. Please verify your Booking ID and Phone Number');
                     currentBooking = null;
                 }
             } catch (error) {
@@ -3001,33 +2988,9 @@
             if (document.getElementById('check-checkout').checked) {
                 modifications.check_out = document.getElementById('modifyCheckOut').value;
             }
-            if (document.getElementById('check-name').checked) {
-                if (hasBookingStarted) {
-                    showError('❌ Cannot modify guest name while booking is active');
-                    return;
-                }
-                modifications.guest_name = document.getElementById('modifyGuestName').value;
-            }
-            if (document.getElementById('check-room').checked) {
-                if (hasBookingStarted) {
-                    showError('❌ Cannot modify room type while booking is active');
-                    return;
-                }
-                modifications.room_type = document.getElementById('modifyRoomType').value;
-            }
-            if (document.getElementById('check-property').checked) {
-                if (hasBookingStarted) {
-                    showError('❌ Cannot modify property while booking is active');
-                    return;
-                }
-                // Convert property ID to name
-                const propertyId = document.getElementById('modifyProperty').value;
-                const propertyMap = { '1': 'Mackey Garden', '2': 'Blossom Hotel' };
-                modifications.property_name = propertyMap[propertyId] || propertyId;
-            }
 
             if (Object.keys(modifications).length === 0) {
-                showError('❌ Please select at least one field to modify');
+                showError('❌ Please select at least one date field to modify');
                 return;
             }
 
@@ -3077,6 +3040,8 @@
                         check_in,
                         check_out,
                         room_number,
+                        room_type,
+                        property_id,
                         property:properties(name)
                     `)
                     .eq('display_id', currentBooking.booking_id.toUpperCase())
@@ -3093,11 +3058,11 @@
 
                 // Store the state BEFORE modification
                 const bookingBeforeChange = {
-                    property_name: currentStateData.property_name,
+                    property_name: currentStateData.property?.name,
                     room_type: currentStateData.room_type,
                     check_in_date: currentStateData.check_in,
                     check_out_date: currentStateData.check_out,
-                    price: currentStateData.price
+                    price: null
                 };
 
                 console.log('[BOOKING BEFORE CHANGE]', bookingBeforeChange);
