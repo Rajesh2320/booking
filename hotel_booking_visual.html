@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.0-CORRECTED (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.39.1-ROOM-TYPES-FIX (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: 2.39.0-CORRECTED (Supabase UMD)</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.1-ROOM-TYPES-FIX</p>
             </div>
         </div>
 
@@ -962,8 +962,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.0-CORRECTED', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
-        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com', 'color: #2196F3; font-size: 12px;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.1-ROOM-TYPES-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Room types load on fresh login', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
@@ -1201,6 +1201,7 @@
                 // Update UI
                 updateUIForLoggedInUser();
                 filterPropertyDropdown();
+                updateRoomTypes();  // Load room types after property is set
 
                 console.log('[AUTH] ✅ Login successful:', currentUser);
 
@@ -1251,6 +1252,7 @@
                 propertySelect.innerHTML = `
                     <option value="${currentUser.propertyId}">${currentUser.propertyName}</option>
                 `;
+                propertySelect.value = currentUser.propertyId;  // Explicitly set value
                 propertySelect.disabled = true;
                 propertySelect.style.backgroundColor = '#f5f5f5';
                 propertySelect.style.cursor = 'not-allowed';
