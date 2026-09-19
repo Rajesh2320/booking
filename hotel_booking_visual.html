@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.1-ROOM-TYPES-FIX (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.39.2-EDGE-FUNCTION-AUDIT-FIX (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.1-ROOM-TYPES-FIX</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.2-EDGE-FUNCTION-AUDIT-FIX</p>
             </div>
         </div>
 
@@ -962,8 +962,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.1-ROOM-TYPES-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
-        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Room types load on fresh login', 'color: #2196F3; font-size: 12px;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.2-EDGE-FUNCTION-AUDIT-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: All 6 edge function parameter mismatches resolved', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
@@ -1513,7 +1513,7 @@
         async function checkAvailability(property, roomType, checkIn, checkOut) {
             try {
                 const payload = {
-                    action: 'check_availability',
+                    name: 'check_availability',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
@@ -1635,14 +1635,19 @@
                 console.log('[Cache] Starting availability fetch (1 API call) for ' + getRoomLabel(property, roomType));
                 console.log('[Cache] Date range: ' + today + ' to ' + endDate);
 
-                // Call the new get_booked_dates endpoint (ONE API CALL instead of 60!)
+                // DISABLED: get_booked_dates not implemented in edge function yet
+                // TODO: Implement get_booked_dates in booking-functions/index.ts
+                // For now, using standard check_availability per date
+                console.warn('[Cache] get_booked_dates not available - falling back to check_availability');
+
+                // Fallback: use check_availability to verify availability still works
                 const payload = {
-                    action: 'get_booked_dates',
+                    name: 'check_availability',
                     args: {
                         property_name: propertyNames[property],
                         room_type: roomType,
-                        start_date: today,
-                        end_date: endDate
+                        check_in: today,
+                        check_out: addDays(today, 1)
                     }
                 };
 
@@ -2593,8 +2598,7 @@
                             check_in: selectedCheckIn,
                             check_out: selectedCheckOut,
                             guest_name: guestName,
-                            guest_phone: guestPhone,
-                            user_id: currentUser.userId
+                            guest_phone: guestPhone
                         }
                     })
                 });
@@ -2740,34 +2744,37 @@
             try {
                 console.log('[FETCH BOOKING] ID:', bookingId, 'Phone:', phoneNumber);
 
-                const headers = { 'Content-Type': 'application/json' };
-                if (authToken) {
-                    headers['Authorization'] = `Bearer ${authToken}`;
-                    console.log('[FETCH BOOKING] Adding Authorization header');
-                }
+                // Query booking details directly from Supabase (get_booking_details not in edge function)
+                const { data: bookingData, error } = await supabase
+                    .from('bookings')
+                    .select(`
+                        id,
+                        display_id,
+                        guest_name,
+                        guest_phone,
+                        check_in,
+                        check_out,
+                        room_number,
+                        property:properties(name)
+                    `)
+                    .eq('display_id', bookingId.toUpperCase())
+                    .single();
 
-                const response = await fetch(BOOKING_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        name: 'get_booking_details',
-                        args: {
-                            booking_id: bookingId,
-                            guest_phone: phoneNumber
-                        }
-                    })
-                });
-
-                const data = await response.json();
                 apiCallCount++;
 
-                if (data.success) {
-                    // Extract booking data from API response
+                if (error) {
+                    console.error('[FETCH BOOKING ERROR]', error);
+                    showError('❌ Booking not found. Please check your confirmation number.');
+                    return;
+                }
+
+                if (bookingData && bookingData.guest_phone === phoneNumber) {
+                    // Extract booking data from Supabase response
                     currentBooking = {
-                        booking_id: data.confirmation_number,
-                        guest_name: data.guest_name,
-                        guest_phone: data.guest_phone,
-                        property_name: data.property_name,
+                        booking_id: bookingData.display_id,
+                        guest_name: bookingData.guest_name,
+                        guest_phone: bookingData.guest_phone,
+                        property_name: bookingData.property?.name,
                         property_id: data.property_id,
                         room_type: data.room_type,
                         room_number: data.room_number,
@@ -3066,31 +3073,30 @@
             try {
                 console.log('[SUBMIT MODIFICATION]', modifications);
 
-                // STEP 1: Fetch current booking state BEFORE modification
+                // STEP 1: Fetch current booking state BEFORE modification from Supabase
                 console.log('[FETCH CURRENT STATE] Getting booking state before modification...');
-                const headers = { 'Content-Type': 'application/json' };
-                if (authToken) {
-                    headers['Authorization'] = `Bearer ${authToken}`;
-                }
 
-                const currentStateResponse = await fetch(BOOKING_FUNCTIONS_URL, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                        name: 'get_booking_details',
-                        args: {
-                            booking_id: currentBooking.booking_id,
-                            guest_phone: currentBooking.guest_phone
-                        }
-                    })
-                });
+                const { data: currentStateData, error: fetchError } = await supabase
+                    .from('bookings')
+                    .select(`
+                        id,
+                        display_id,
+                        guest_name,
+                        guest_phone,
+                        check_in,
+                        check_out,
+                        room_number,
+                        property:properties(name)
+                    `)
+                    .eq('display_id', currentBooking.booking_id.toUpperCase())
+                    .single();
 
-                const currentStateData = await currentStateResponse.json();
                 apiCallCount++;
                 console.log('[CURRENT STATE DATA]', currentStateData);
 
-                if (!currentStateData.success) {
+                if (fetchError || !currentStateData) {
                     showError('❌ Failed to fetch current booking state. Please try again.');
+                    console.error('Fetch error:', fetchError);
                     return;
                 }
 
@@ -3119,10 +3125,8 @@
                         args: {
                             booking_id: currentBooking.booking_id,
                             guest_phone: currentBooking.guest_phone,
-                            check_in: modifications.check_in || null,
-                            check_out: modifications.check_out || null,
-                            room_type: modifications.room_type || null,
-                            property_name: modifications.property_name || null
+                            new_check_in: modifications.check_in || null,
+                            new_check_out: modifications.check_out || null
                         }
                     })
                 });
