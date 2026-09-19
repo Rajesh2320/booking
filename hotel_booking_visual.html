@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.40.1-RLS-BYPASS-AND-TAB-SWITCHING (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.40.2-MODIFICATION-UI-UPGRADE (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -577,15 +577,60 @@
             flex: 1;
         }
 
+        /* Read-only Fields Section */
+        .readonly-fields-section {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .readonly-fields-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .readonly-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .readonly-field label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .readonly-value {
+            padding: 10px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #999;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Modifiable Fields Section */
+        .modifiable-fields-section {
+            margin-bottom: 20px;
+        }
+
         .modification-fields {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .modify-field {
-            display: none;
+            display: flex;
+            flex-direction: column;
         }
 
         .modify-field.active {
@@ -601,11 +646,13 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
+            background: white;
         }
 
         .modify-field input:focus,
         .modify-field select:focus {
             border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .modify-field label {
@@ -613,6 +660,58 @@
             color: #333;
             margin-bottom: 8px;
             font-size: 13px;
+        }
+
+        /* Availability Widget */
+        .modify-availability-widget {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .availability-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .availability-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: default;
+            border: 1px solid #e0e0e0;
+        }
+
+        .availability-day.available {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-color: #4caf50;
+        }
+
+        .availability-day.booked {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #e53935;
+        }
+
+        .availability-day.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .availability-day.other-month {
+            background: #fafafa;
+            color: #ccc;
+            cursor: not-allowed;
         }
 
         .modification-actions {
@@ -696,7 +795,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.1-RLS-BYPASS-AND-TAB-SWITCHING</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.2-MODIFICATION-UI-UPGRADE</p>
             </div>
         </div>
 
@@ -747,37 +846,90 @@
 
             <!-- Modification Form -->
             <div class="modification-form" id="modificationForm">
-                <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px;">📋 Select Fields to Modify</h3>
+                <h3 style="margin: 0 0 20px 0; color: #333; font-size: 16px;">📋 Modify Your Booking</h3>
 
                 <div class="future-booking-warning" id="futureWarning">
                     ⚠️ This booking is in the past and cannot be modified. Only future bookings can be modified.
                 </div>
 
-                <div class="modification-checkbox-group" id="checkboxGroup">
-                    <!-- Will be populated by JavaScript -->
+                <!-- Read-only Fields (Greyed Out) -->
+                <div class="readonly-fields-section">
+                    <h4 style="margin: 0 0 15px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Information (Read-Only)</h4>
+
+                    <div class="readonly-fields-grid">
+                        <!-- Guest Name -->
+                        <div class="readonly-field">
+                            <label>Guest Name</label>
+                            <div class="readonly-value" id="readonlyGuestName">-</div>
+                        </div>
+
+                        <!-- Property -->
+                        <div class="readonly-field">
+                            <label>Property</label>
+                            <div class="readonly-value" id="readonlyProperty">-</div>
+                        </div>
+
+                        <!-- Current Room Type -->
+                        <div class="readonly-field">
+                            <label>Current Room Type</label>
+                            <div class="readonly-value" id="readonlyRoomType">-</div>
+                        </div>
+
+                        <!-- Current Check-in -->
+                        <div class="readonly-field">
+                            <label>Current Check-in</label>
+                            <div class="readonly-value" id="readonlyCheckIn">-</div>
+                        </div>
+
+                        <!-- Current Check-out -->
+                        <div class="readonly-field">
+                            <label>Current Check-out</label>
+                            <div class="readonly-value" id="readonlyCheckOut">-</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="modification-fields" id="modificationFields">
-                    <!-- Check-in Date -->
-                    <div class="modify-field" id="field-checkin" style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" id="check-checkin">
-                        <div style="flex: 1;">
+                <!-- Modifiable Fields -->
+                <div class="modifiable-fields-section" id="modifiableSection">
+                    <h4 style="margin: 20px 0 15px 0; color: #333; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; border-top: 1px solid #e0e0e0; padding-top: 20px;">Modify Reservation</h4>
+
+                    <div class="modification-fields" id="modificationFields">
+                        <!-- Check-in Date -->
+                        <div class="modify-field" id="field-checkin">
                             <label for="modifyCheckIn">New Check-in Date</label>
-                            <input type="date" id="modifyCheckIn">
+                            <input type="date" id="modifyCheckIn" onchange="onModifyDatesChange()">
                         </div>
-                    </div>
 
-                    <!-- Check-out Date -->
-                    <div class="modify-field" id="field-checkout" style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" id="check-checkout">
-                        <div style="flex: 1;">
+                        <!-- Check-out Date -->
+                        <div class="modify-field" id="field-checkout">
                             <label for="modifyCheckOut">New Check-out Date</label>
-                            <input type="date" id="modifyCheckOut">
+                            <input type="date" id="modifyCheckOut" onchange="onModifyDatesChange()">
+                        </div>
+
+                        <!-- Room Type Selection -->
+                        <div class="modify-field" id="field-roomtype">
+                            <label for="modifyRoomType">New Room Type</label>
+                            <select id="modifyRoomType" onchange="onRoomTypeChangeForModify()">
+                                <option value="">Select room type...</option>
+                            </select>
                         </div>
                     </div>
 
-                    <p style="font-size: 12px; color: #888; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
-                        ℹ️ Currently you can modify check-in and check-out dates only. Please contact support for other modifications.
+                    <!-- Availability Calendar Widget -->
+                    <div class="modify-availability-widget" id="modifyAvailabilityWidget">
+                        <h4 style="margin: 20px 0 15px 0; color: #333; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">📅 Availability Check</h4>
+
+                        <div id="modifyAvailabilityStatus" style="padding: 15px; border-radius: 6px; background: #f0f0f0; border-left: 4px solid #999; margin-bottom: 15px; font-size: 13px; color: #666;">
+                            Select check-in, check-out dates and room type to check availability
+                        </div>
+
+                        <div class="availability-calendar-grid" id="modifyAvailabilityCalendar">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <p style="font-size: 12px; color: #888; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+                        ℹ️ You can modify check-in date, check-out date, and room type. The calendar shows availability for your selected dates and room type.
                     </p>
                 </div>
 
@@ -2821,6 +2973,13 @@
             `;
 
             document.getElementById('currentBookingDetails').classList.add('show');
+
+            // Also populate readonly fields in the modification form
+            document.getElementById('readonlyGuestName').textContent = currentBooking.guest_name || '-';
+            document.getElementById('readonlyProperty').textContent = currentBooking.property_name || '-';
+            document.getElementById('readonlyRoomType').textContent = currentBooking.room_type || '-';
+            document.getElementById('readonlyCheckIn').textContent = currentBooking.check_in_date || '-';
+            document.getElementById('readonlyCheckOut').textContent = currentBooking.check_out_date || '-';
         }
 
         function checkIfFutureBooking() {
@@ -2834,6 +2993,9 @@
             const futureWarning = document.getElementById('futureWarning');
             const modificationForm = document.getElementById('modificationForm');
             const modificationActions = document.getElementById('modificationActions');
+            const checkInField = document.getElementById('field-checkin');
+            const checkOutField = document.getElementById('field-checkout');
+            const roomTypeField = document.getElementById('field-roomtype');
 
             // Check if check-out date has already passed
             if (checkOutDate <= today) {
@@ -2849,94 +3011,63 @@
             const hasBookingStarted = checkInDate <= today;
 
             if (hasBookingStarted) {
-                // Booking is currently active - only allow check-out modification
+                // Booking is currently active - only allow check-out and room type modification
                 futureWarning.classList.add('show');
-                futureWarning.innerHTML = '⚠️ This booking is currently active. You can only modify the check-out date.';
+                futureWarning.innerHTML = '⚠️ This booking is currently active. You can only modify the check-out date and room type.';
                 modificationForm.classList.add('show');
-                createModificationCheckboxes(true); // true = restrict to checkout only
+
+                // Disable check-in field
+                document.getElementById('modifyCheckIn').disabled = true;
+                checkInField.style.opacity = '0.5';
+                checkInField.style.pointerEvents = 'none';
+
+                // Enable check-out and room type
+                document.getElementById('modifyCheckOut').disabled = false;
+                checkOutField.style.opacity = '1';
+                checkOutField.style.pointerEvents = 'auto';
+
+                document.getElementById('modifyRoomType').disabled = false;
+                roomTypeField.style.opacity = '1';
+                roomTypeField.style.pointerEvents = 'auto';
             } else {
                 // Booking hasn't started - allow all modifications
                 futureWarning.classList.remove('show');
                 modificationForm.classList.add('show');
-                createModificationCheckboxes(false); // false = allow all modifications
+
+                // Enable all fields
+                document.getElementById('modifyCheckIn').disabled = false;
+                document.getElementById('modifyCheckOut').disabled = false;
+                document.getElementById('modifyRoomType').disabled = false;
+                checkInField.style.opacity = '1';
+                checkOutField.style.opacity = '1';
+                roomTypeField.style.opacity = '1';
+                checkInField.style.pointerEvents = 'auto';
+                checkOutField.style.pointerEvents = 'auto';
+                roomTypeField.style.pointerEvents = 'auto';
             }
+
+            // Populate room type dropdown
+            populateRoomTypeSelect();
+            populateModificationFields();
         }
 
-        function createModificationCheckboxes(restrictToCheckoutOnly = false) {
+        function populateModificationFields() {
             if (!currentBooking) return;
 
-            const checkboxGroup = document.getElementById('checkboxGroup');
-            const fields = [
-                { id: 'checkin', label: 'Check-in Date', field: 'field-checkin' },
-                { id: 'checkout', label: 'Check-out Date', field: 'field-checkout' },
-                { id: 'name', label: 'Guest Name', field: 'field-name' },
-                { id: 'room', label: 'Room Type', field: 'field-room' },
-                { id: 'property', label: 'Property', field: 'field-property' }
-            ];
+            // Populate date fields with current values
+            document.getElementById('modifyCheckIn').value = currentBooking.check_in_date;
+            document.getElementById('modifyCheckOut').value = currentBooking.check_out_date;
 
-            checkboxGroup.innerHTML = fields.map(f => {
-                const isDisabled = restrictToCheckoutOnly && f.id !== 'checkout';
-                const disabledClass = isDisabled ? 'opacity: 0.5; cursor: not-allowed;' : '';
-                const disabledAttr = isDisabled ? 'disabled' : '';
-                const tooltip = isDisabled ? ' title="Cannot modify while booking is active"' : '';
+            // Set room type to current room type
+            document.getElementById('modifyRoomType').value = currentBooking.room_type;
 
-                return `
-                <div class="checkbox-item" style="${disabledClass}">
-                    <input type="checkbox" id="check-${f.id}" onchange="toggleModificationField('${f.id}', '${f.field}')" ${disabledAttr}${tooltip}>
-                    <label for="check-${f.id}"${tooltip}>${f.label}</label>
-                </div>
-            `;
-            }).join('');
-        }
-
-        function toggleModificationField(fieldId, fieldClass) {
-            const checkbox = document.getElementById(`check-${fieldId}`);
-            const field = document.getElementById(fieldClass);
-            const actions = document.getElementById('modificationActions');
-
-            if (checkbox.checked) {
-                field.classList.add('active');
-                populateCurrentValues(fieldId);
-            } else {
-                field.classList.remove('active');
-                clearFieldValue(fieldId);
-            }
-
-            // Show actions if any field is checked
-            const anyChecked = document.querySelectorAll('.checkbox-item input[type="checkbox"]:checked').length > 0;
-            if (anyChecked) {
-                actions.classList.add('show');
-            } else {
-                actions.classList.remove('show');
-            }
-        }
-
-        function populateCurrentValues(fieldId) {
-            if (!currentBooking) return;
-
-            switch (fieldId) {
-                case 'checkin':
-                    document.getElementById('modifyCheckIn').value = currentBooking.check_in_date;
-                    break;
-                case 'checkout':
-                    document.getElementById('modifyCheckOut').value = currentBooking.check_out_date;
-                    break;
-                case 'name':
-                    document.getElementById('modifyGuestName').value = currentBooking.guest_name;
-                    break;
-                case 'room':
-                    populateRoomTypeSelect();
-                    break;
-                case 'property':
-                    // Convert property name to ID
-                    const propertyNameToId = { 'Mackey Garden': '1', 'Blossom Hotel': '2' };
-                    const propertyId = propertyNameToId[currentBooking.property_name] || '1';
-                    document.getElementById('modifyProperty').value = propertyId;
-                    break;
-            }
+            // Show modification actions
+            document.getElementById('modificationActions').classList.add('show');
         }
 
         function populateRoomTypeSelect() {
+            if (!currentBooking) return;
+
             // Get property ID from property name
             const propertyNames = { 'Mackey Garden': '1', 'Blossom Hotel': '2' };
             const propertyId = propertyNames[currentBooking.property_name] || '1';
@@ -2949,32 +3080,97 @@
 
             availableRooms.forEach(roomDbValue => {
                 const option = document.createElement('option');
-                option.value = roomDbValue;  // Database value like 'standard_non_ac', 'deluxe', etc.
-                option.textContent = roomNames[roomDbValue] || roomDbValue;  // Display name
-                option.selected = roomDbValue === currentBooking.room_type;  // Compare with database value
+                option.value = roomDbValue;
+                option.textContent = roomNames[roomDbValue] || roomDbValue;
+                option.selected = roomDbValue === currentBooking.room_type;
                 select.appendChild(option);
             });
 
             console.log('[POPULATE ROOM TYPE]', { property: currentBooking.property_name, propertyId, currentRoomType: currentBooking.room_type });
         }
 
-        function clearFieldValue(fieldId) {
-            switch (fieldId) {
-                case 'checkin':
-                    document.getElementById('modifyCheckIn').value = '';
-                    break;
-                case 'checkout':
-                    document.getElementById('modifyCheckOut').value = '';
-                    break;
-                case 'name':
-                    document.getElementById('modifyGuestName').value = '';
-                    break;
-                case 'room':
-                    document.getElementById('modifyRoomType').value = '';
-                    break;
-                case 'property':
-                    document.getElementById('modifyProperty').value = '';
-                    break;
+        function onModifyDatesChange() {
+            if (!currentBooking) return;
+
+            const checkIn = document.getElementById('modifyCheckIn').value;
+            const checkOut = document.getElementById('modifyCheckOut').value;
+            const roomType = document.getElementById('modifyRoomType').value;
+
+            console.log('[DATES CHANGE]', { checkIn, checkOut, roomType });
+
+            // Fetch availability for the selected room type and dates
+            if (checkIn && checkOut && roomType) {
+                checkAvailabilityForModify(roomType, checkIn, checkOut);
+            }
+        }
+
+        async function onRoomTypeChangeForModify() {
+            if (!currentBooking) return;
+
+            const checkIn = document.getElementById('modifyCheckIn').value;
+            const checkOut = document.getElementById('modifyCheckOut').value;
+            const roomType = document.getElementById('modifyRoomType').value;
+
+            console.log('[ROOM TYPE CHANGE]', { checkIn, checkOut, roomType });
+
+            // Fetch availability for the selected room type and dates
+            if (checkIn && checkOut && roomType) {
+                await checkAvailabilityForModify(roomType, checkIn, checkOut);
+            }
+        }
+
+        async function checkAvailabilityForModify(roomType, checkIn, checkOut) {
+            if (!currentBooking) return;
+
+            try {
+                console.log('[CHECK AVAILABILITY FOR MODIFY]', { roomType, checkIn, checkOut, currentBookingId: currentBooking.booking_id });
+
+                // Call edge function to check availability
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+
+                const response = await fetch(BOOKING_FUNCTIONS_URL, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        action: 'check_availability_for_modify',
+                        args: {
+                            room_type: roomType,
+                            check_in: checkIn,
+                            check_out: checkOut,
+                            property_id: currentBooking.property_id,
+                            exclude_booking_id: currentBooking.booking_id
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                apiCallCount++;
+
+                console.log('[AVAILABILITY RESPONSE]', data);
+
+                if (data.success && data.available) {
+                    document.getElementById('modifyAvailabilityStatus').innerHTML =
+                        `✅ <strong>Available!</strong> This room type is available for your selected dates.`;
+                    document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#4caf50';
+                    document.getElementById('modifyAvailabilityStatus').style.background = '#e8f5e9';
+                    document.getElementById('modifyAvailabilityStatus').style.color = '#2e7d32';
+                } else {
+                    document.getElementById('modifyAvailabilityStatus').innerHTML =
+                        `❌ <strong>Not Available</strong> (${data.conflicts || 'unknown'} conflicts). This room type has bookings during your selected dates.`;
+                    document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#e53935';
+                    document.getElementById('modifyAvailabilityStatus').style.background = '#ffebee';
+                    document.getElementById('modifyAvailabilityStatus').style.color = '#c62828';
+                }
+            } catch (error) {
+                console.error('[AVAILABILITY CHECK ERROR]', error);
+                document.getElementById('modifyAvailabilityStatus').innerHTML =
+                    `⚠️ Could not check availability: ${error.message}`;
+                document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#ff9800';
+                document.getElementById('modifyAvailabilityStatus').style.background = '#fff3e0';
+                document.getElementById('modifyAvailabilityStatus').style.color = '#e65100';
             }
         }
 
@@ -2990,21 +3186,30 @@
             const hasBookingStarted = checkInDate <= today;
 
             const modifications = {};
+            const newCheckIn = document.getElementById('modifyCheckIn').value;
+            const newCheckOut = document.getElementById('modifyCheckOut').value;
+            const newRoomType = document.getElementById('modifyRoomType').value;
 
-            // Collect all checked modifications
-            if (document.getElementById('check-checkin').checked) {
+            // Check if dates have changed from original
+            if (newCheckIn && newCheckIn !== currentBooking.check_in_date) {
                 if (hasBookingStarted) {
                     showError('❌ Cannot modify check-in date while booking is active');
                     return;
                 }
-                modifications.check_in = document.getElementById('modifyCheckIn').value;
+                modifications.check_in = newCheckIn;
             }
-            if (document.getElementById('check-checkout').checked) {
-                modifications.check_out = document.getElementById('modifyCheckOut').value;
+
+            if (newCheckOut && newCheckOut !== currentBooking.check_out_date) {
+                modifications.check_out = newCheckOut;
+            }
+
+            // Check if room type has changed
+            if (newRoomType && newRoomType !== currentBooking.room_type) {
+                modifications.new_room_type = newRoomType;
             }
 
             if (Object.keys(modifications).length === 0) {
-                showError('❌ Please select at least one date field to modify');
+                showError('❌ Please modify at least one field (check-in, check-out, or room type)');
                 return;
             }
 
@@ -3099,7 +3304,8 @@
                             booking_id: currentBooking.booking_id,
                             guest_phone: currentBooking.guest_phone,
                             new_check_in: modifications.check_in || null,
-                            new_check_out: modifications.check_out || null
+                            new_check_out: modifications.check_out || null,
+                            new_room_type: modifications.new_room_type || null
                         }
                     })
                 });
@@ -3265,15 +3471,36 @@
             document.getElementById('modificationActions').classList.remove('show');
             document.getElementById('futureWarning').classList.remove('show');
 
-            // Clear all checkboxes
-            document.querySelectorAll('.checkbox-item input[type="checkbox"]').forEach(cb => {
-                cb.checked = false;
-            });
+            // Clear all form fields
+            document.getElementById('modifyCheckIn').value = '';
+            document.getElementById('modifyCheckOut').value = '';
+            document.getElementById('modifyRoomType').value = '';
 
-            // Hide all fields
-            document.querySelectorAll('.modify-field').forEach(field => {
-                field.classList.remove('active');
-            });
+            // Reset disabled state
+            document.getElementById('modifyCheckIn').disabled = false;
+            document.getElementById('modifyCheckOut').disabled = false;
+            document.getElementById('modifyRoomType').disabled = false;
+
+            // Reset field opacity
+            document.getElementById('field-checkin').style.opacity = '1';
+            document.getElementById('field-checkout').style.opacity = '1';
+            document.getElementById('field-roomtype').style.opacity = '1';
+            document.getElementById('field-checkin').style.pointerEvents = 'auto';
+            document.getElementById('field-checkout').style.pointerEvents = 'auto';
+            document.getElementById('field-roomtype').style.pointerEvents = 'auto';
+
+            // Reset readonly fields display
+            document.getElementById('readonlyGuestName').textContent = '-';
+            document.getElementById('readonlyProperty').textContent = '-';
+            document.getElementById('readonlyRoomType').textContent = '-';
+            document.getElementById('readonlyCheckIn').textContent = '-';
+            document.getElementById('readonlyCheckOut').textContent = '-';
+
+            // Reset availability status
+            document.getElementById('modifyAvailabilityStatus').innerHTML = 'Select check-in, check-out dates and room type to check availability';
+            document.getElementById('modifyAvailabilityStatus').style.borderLeftColor = '#999';
+            document.getElementById('modifyAvailabilityStatus').style.background = '#f0f0f0';
+            document.getElementById('modifyAvailabilityStatus').style.color = '#666';
 
             currentBooking = null;
         }
