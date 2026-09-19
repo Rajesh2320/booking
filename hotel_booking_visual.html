@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.40.1-RLS-BYPASS-AND-TAB-SWITCHING (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.1-RLS-BYPASS-AND-TAB-SWITCHING</p>
             </div>
         </div>
 
@@ -948,7 +948,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.40.1-RLS-BYPASS-AND-TAB-SWITCHING', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
         console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Changed API parameter from name→action to match deployed edge function requirements', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
@@ -1052,6 +1052,25 @@
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('userSection').style.display = 'block';
             document.querySelector('.booking-section').style.display = 'block';
+
+            // Check URL for mode parameter to show appropriate section
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            if (mode === 'modify') {
+                console.log('[MODE] Modify booking mode detected from URL');
+                showModifyBookingTab();
+            }
+        }
+
+        function showModifyBookingTab() {
+            // Hide create booking sections
+            document.getElementById('summarySection').style.display = 'none';
+            document.getElementById('guestForm').style.display = 'none';
+            document.getElementById('buttonGroup').style.display = 'none';
+
+            // Show modify booking section
+            document.getElementById('modificationSection').style.display = 'block';
+            console.log('[UI] Showing modify booking section');
         }
 
         function updateUIForLoggedInUser() {
@@ -2721,52 +2740,47 @@
             try {
                 console.log('[FETCH BOOKING] ID:', bookingId, 'Phone:', phoneNumber);
 
-                // Query booking details directly from Supabase (get_booking_details not in edge function)
-                const { data: bookingData, error } = await supabase
-                    .from('bookings')
-                    .select(`
-                        id,
-                        display_id,
-                        guest_name,
-                        guest_phone,
-                        check_in,
-                        check_out,
-                        room_number,
-                        room_type,
-                        property_id,
-                        status,
-                        property:properties(name)
-                    `)
-                    .eq('display_id', bookingId.toUpperCase())
-                    .single();
-
-                apiCallCount++;
-
-                if (error) {
-                    console.error('[FETCH BOOKING ERROR]', error);
-                    showError('❌ Booking not found. Please check your confirmation number.');
-                    return;
+                // Call edge function to get booking details (bypasses RLS)
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
                 }
 
-                if (bookingData && bookingData.guest_phone === phoneNumber) {
-                    // Extract booking data from Supabase response
+                const response = await fetch(BOOKING_FUNCTIONS_URL, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        action: 'get_booking_for_modify',
+                        args: {
+                            booking_id: bookingId,
+                            guest_phone: phoneNumber
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                apiCallCount++;
+
+                console.log('[FETCH BOOKING RESPONSE]', data);
+
+                if (data.success && data.booking) {
                     currentBooking = {
-                        booking_id: bookingData.display_id,
-                        guest_name: bookingData.guest_name,
-                        guest_phone: bookingData.guest_phone,
-                        property_name: bookingData.property?.name,
-                        property_id: bookingData.property_id,
-                        room_type: bookingData.room_type,
-                        room_number: bookingData.room_number,
-                        check_in_date: bookingData.check_in,
-                        check_out_date: bookingData.check_out,
-                        status: bookingData.status
+                        booking_id: data.booking.booking_id,
+                        guest_name: data.booking.guest_name,
+                        guest_phone: data.booking.guest_phone,
+                        property_name: data.booking.property_name,
+                        property_id: data.booking.property_id,
+                        room_type: data.booking.room_type,
+                        room_number: data.booking.room_number,
+                        check_in_date: data.booking.check_in_date,
+                        check_out_date: data.booking.check_out_date,
+                        status: data.booking.status
                     };
                     console.log('[BOOKING FOUND]', currentBooking);
                     displayCurrentBookingDetails();
                     checkIfFutureBooking();
                 } else {
-                    showError('❌ Booking not found. Please verify your Booking ID and Phone Number');
+                    showError('❌ ' + (data.result || 'Booking not found. Please verify your Booking ID and Phone Number'));
                     currentBooking = null;
                 }
             } catch (error) {
@@ -3027,41 +3041,44 @@
             try {
                 console.log('[SUBMIT MODIFICATION]', modifications);
 
-                // STEP 1: Fetch current booking state BEFORE modification from Supabase
+                // STEP 1: Fetch current booking state BEFORE modification using edge function
                 console.log('[FETCH CURRENT STATE] Getting booking state before modification...');
 
-                const { data: currentStateData, error: fetchError } = await supabase
-                    .from('bookings')
-                    .select(`
-                        id,
-                        display_id,
-                        guest_name,
-                        guest_phone,
-                        check_in,
-                        check_out,
-                        room_number,
-                        room_type,
-                        property_id,
-                        property:properties(name)
-                    `)
-                    .eq('display_id', currentBooking.booking_id.toUpperCase())
-                    .single();
+                const getStateHeaders = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    getStateHeaders['Authorization'] = `Bearer ${authToken}`;
+                }
 
+                const getStateResponse = await fetch(BOOKING_FUNCTIONS_URL, {
+                    method: 'POST',
+                    headers: getStateHeaders,
+                    body: JSON.stringify({
+                        action: 'get_booking_for_modify',
+                        args: {
+                            booking_id: currentBooking.booking_id,
+                            guest_phone: currentBooking.guest_phone
+                        }
+                    })
+                });
+
+                const stateData = await getStateResponse.json();
                 apiCallCount++;
-                console.log('[CURRENT STATE DATA]', currentStateData);
+                console.log('[CURRENT STATE DATA]', stateData);
 
-                if (fetchError || !currentStateData) {
+                if (!stateData.success || !stateData.booking) {
                     showError('❌ Failed to fetch current booking state. Please try again.');
-                    console.error('Fetch error:', fetchError);
+                    console.error('Fetch error:', stateData.result);
                     return;
                 }
 
+                const currentStateData = stateData.booking;
+
                 // Store the state BEFORE modification
                 const bookingBeforeChange = {
-                    property_name: currentStateData.property?.name,
+                    property_name: currentStateData.property_name,
                     room_type: currentStateData.room_type,
-                    check_in_date: currentStateData.check_in,
-                    check_out_date: currentStateData.check_out,
+                    check_in_date: currentStateData.check_in_date,
+                    check_out_date: currentStateData.check_out_date,
                     price: null
                 };
 
