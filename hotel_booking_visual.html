@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking System - v2.39.6-CONFIRMATION-AND-RESET-FIXES (Supabase UMD)</title>
+    <title>Hotel Booking System - v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX (Supabase UMD)</title>
     <style>
         * {
             margin: 0;
@@ -696,7 +696,7 @@
                     <button onclick="handleLogin()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Log In</button>
                 </div>
                 <p style="color: #999; margin: 15px 0 0 0; font-size: 12px;">Demo: bash.labs.inc@gmail.com / Temp$1234</p>
-                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.39.6-CONFIRMATION-AND-RESET-FIXES</p>
+                <p style="color: #4CAF50; margin: 8px 0 0 0; font-size: 11px; font-weight: bold; background: #f0f0f0; padding: 6px 8px; border-radius: 4px; display: inline-block;">✓ VERSION: v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX</p>
             </div>
         </div>
 
@@ -962,7 +962,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
     <script>
         // VERSION INFO - This helps identify correct deployments
-        console.log('%c✓ HOTEL BOOKING SYSTEM v2.39.6-CONFIRMATION-AND-RESET-FIXES', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
+        console.log('%c✓ HOTEL BOOKING SYSTEM v2.40.0-GET-BOOKED-DATES-CALENDAR-FIX', 'color: #4CAF50; font-size: 14px; font-weight: bold;');
         console.log('%cSupabase: 2.39.0 (UMD) | Credentials: bash.labs.inc@gmail.com | Fix: Changed API parameter from name→action to match deployed edge function requirements', 'color: #2196F3; font-size: 12px;');
 
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
@@ -1314,7 +1314,7 @@
 
             console.log('[PDF STORAGE] Configuration:', {
               url: SUPABASE_URL,
-              bucket: 'documents',
+              bucket: 'pdfs',
               path: storagePath,
               fileSize: pdfBlob.size + ' bytes',
               contentType: 'application/pdf'
@@ -1643,13 +1643,28 @@
                 console.log('[Cache] Starting availability fetch for ' + getRoomLabel(property, roomType));
                 console.log('[Cache] Date range: ' + today + ' to ' + endDate);
 
-                // DISABLED: get_booked_dates not implemented in edge function yet
-                // This is an optimization - the calendar will use individual check_availability calls instead
-                // TODO: Implement get_booked_dates in booking-functions/index.ts for performance
-                console.log('[Cache] Using per-date availability checks (get_booked_dates not available)');
+                // Call get_booked_dates to pre-load all booked dates for this room type
+                console.log('[Cache] Calling get_booked_dates API...');
+                const availabilityResponse = await fetch(BOOKING_FUNCTIONS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'get_booked_dates',
+                        args: {
+                            property_name: propertyNames[property],
+                            room_type: roomType
+                        }
+                    })
+                });
 
-                // For now, populate cache with empty (will be filled by individual checks)
-                const bookedDates = new Set();
+                const availabilityData = await availabilityResponse.json();
+                const bookedDates = new Set(availabilityData.booked_dates || []);
+
+                if (availabilityData.success) {
+                    console.log('[Cache] ✅ Successfully loaded booked dates');
+                } else {
+                    console.warn('[Cache] ⚠️ Failed to load booked dates, will fall back to click validation');
+                }
 
                 // Store in cache
                 const cacheKey = getCacheKey(property, roomType);
