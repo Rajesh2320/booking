@@ -958,13 +958,13 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/iife-bootstrap/4.0.0/iife-bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.0/dist/main.min.js"></script>
     <script>
         const SUPABASE_URL = 'https://wabecmyyusiwmvctoiwu.supabase.co';
         const BOOKING_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1/booking-functions`;
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmVjbXl5dXNpd212Y3RvaXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NjA0OTEsImV4cCI6MjEwNTAzNjQ5MX0.xIkv_WBffIVilW-ADc8Tn3iwzpSbbQsZFrrXRqwkiSE';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndhYmVjbXl5dXNpd212Y3RvaXd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTc0MTQwOTEsImV4cCI6MTk5NzAzMDA5MX0.H8H1LWV8xtPFjjTbf0g70OYKAGKQAe-rLvXWbFSdxBc';
 
-        // Initialize Supabase client with alternative loading method
+        // Initialize Supabase client for PDF storage - with retry logic
         let supabase = null;
         let supabaseInitialized = false;
         let supabaseInitRetries = 0;
@@ -983,44 +983,24 @@
         // Call on page load
         retrieveAuthToken();
 
-        async function initializeSupabase() {
-            try {
-                // Try loading Supabase as dynamic import
-                if (!window.supabaseLoaded) {
-                    console.log('[SUPABASE INIT] Loading Supabase library dynamically...');
-                    const supabaseModule = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-                    const { createClient } = supabaseModule;
-                    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-                    window.supabaseLoaded = true;
+        function initializeSupabase() {
+            if (window.supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     supabaseInitialized = true;
-                    console.log('[SUPABASE INIT] ✅ Client initialized successfully (dynamic import)');
+                    console.log('[SUPABASE INIT] ✅ Client initialized successfully');
                     return true;
-                } else if (supabase) {
-                    supabaseInitialized = true;
-                    console.log('[SUPABASE INIT] ✅ Client already initialized');
-                    return true;
+                } catch (error) {
+                    console.error('[SUPABASE INIT] ❌ Failed to initialize client:', error);
+                    return false;
                 }
-            } catch (error) {
-                console.error('[SUPABASE INIT] ❌ Dynamic import failed:', error);
-
-                // Fallback: Try using window.supabase if it's available
-                if (window.supabase && typeof window.supabase.createClient === 'function') {
-                    try {
-                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                        supabaseInitialized = true;
-                        console.log('[SUPABASE INIT] ✅ Client initialized successfully (fallback)');
-                        return true;
-                    } catch (fallbackError) {
-                        console.error('[SUPABASE INIT] ❌ Fallback also failed:', fallbackError);
-                    }
-                }
-
+            } else {
                 if (supabaseInitRetries < 5) {
                     supabaseInitRetries++;
-                    console.warn(`[SUPABASE INIT] Retry ${supabaseInitRetries}/5...`);
-                    setTimeout(initializeSupabase, 1000);
+                    console.warn(`[SUPABASE INIT] Library not loaded yet, retrying (${supabaseInitRetries}/5)...`);
+                    setTimeout(initializeSupabase, 500);
                 } else {
-                    console.error('[SUPABASE INIT] ❌ Failed to load Supabase after 5 retries');
+                    console.error('[SUPABASE INIT] ❌ Supabase library failed to load from CDN after 5 retries');
                 }
                 return false;
             }
@@ -1056,6 +1036,7 @@
                     console.log('[AUTH] User loaded from localStorage:', currentUser);
                     updateUIForLoggedInUser();
                     filterPropertyDropdown();
+                    updateRoomTypes();
                 } catch (e) {
                     console.error('[AUTH] Error parsing saved user:', e);
                     localStorage.removeItem('currentUser');
@@ -1217,7 +1198,6 @@
                 // Update UI
                 updateUIForLoggedInUser();
                 filterPropertyDropdown();
-                updateRoomTypes();  // Load room types for selected property
 
                 console.log('[AUTH] ✅ Login successful:', currentUser);
 
@@ -2601,7 +2581,7 @@
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                        action: 'create_booking',
+                        name: 'create_booking',
                         args: {
                             property_name: propertyNames[property],
                             room_type: roomType,
